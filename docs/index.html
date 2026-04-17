@@ -439,9 +439,13 @@
 
         async function loadJSON(url) {
             try {
+                console.log(`开始加载: ${url}`);
                 const response = await fetch(url);
+                console.log(`响应状态: ${response.status} ${response.statusText}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
+                const data = await response.json();
+                console.log(`加载成功: ${url}`, data);
+                return data;
             } catch (error) {
                 console.error(`Error loading ${url}:`, error);
                 return null;
@@ -498,45 +502,56 @@
         async function init() {
             console.log('开始加载数据...');
             
-            const trendData = await loadJSON('data/pm25_trend_data.json');
-            console.log('trendData加载结果:', trendData ? '成功' : '失败');
-            
-            const spatialData = await loadJSON('data/pm25_spatial_data.json');
-            console.log('spatialData加载结果:', spatialData ? '成功' : '失败');
-            
-            const heterogeneityData = await loadJSON('data/pm25_heterogeneity_data.json');
-            console.log('heterogeneityData加载结果:', heterogeneityData ? '成功' : '失败');
-            
-            const summaryData = await loadJSON('data/pm25_analysis_summary.json');
-            console.log('summaryData加载结果:', summaryData ? '成功' : '失败');
-
-            if (trendData && spatialData && heterogeneityData && summaryData) {
-                console.log('所有数据加载成功，开始渲染图表...');
-                renderSummaryStats(summaryData);
-                renderTrendCharts(trendData);
-                renderSpatialCharts(spatialData);
-                renderHeterogeneityCharts(heterogeneityData);
-                renderAdvancedCharts(trendData, spatialData);
-                renderConclusions(summaryData, trendData, spatialData, heterogeneityData);
-                renderTables(spatialData, heterogeneityData);
-
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('content').classList.remove('hidden');
-            } else {
-                const errorDetails = [
-                    `trendData: ${trendData ? '✅' : '❌'}`,
-                    `spatialData: ${spatialData ? '✅' : '❌'}`,
-                    `heterogeneityData: ${heterogeneityData ? '✅' : '❌'}`,
-                    `summaryData: ${summaryData ? '✅' : '❌'}`
-                ].join('<br>');
+            try {
+                const trendData = await loadJSON('data/pm25_trend_data.json');
+                console.log('trendData加载结果:', trendData ? '成功' : '失败');
                 
+                const spatialData = await loadJSON('data/pm25_spatial_data.json');
+                console.log('spatialData加载结果:', spatialData ? '成功' : '失败');
+                
+                const heterogeneityData = await loadJSON('data/pm25_heterogeneity_data.json');
+                console.log('heterogeneityData加载结果:', heterogeneityData ? '成功' : '失败');
+                
+                const summaryData = await loadJSON('data/pm25_analysis_summary.json');
+                console.log('summaryData加载结果:', summaryData ? '成功' : '失败');
+
+                if (trendData && spatialData && heterogeneityData && summaryData) {
+                    console.log('所有数据加载成功，开始渲染图表...');
+                    renderSummaryStats(summaryData);
+                    renderTrendCharts(trendData);
+                    renderSpatialCharts(spatialData);
+                    renderHeterogeneityCharts(heterogeneityData);
+                    renderAdvancedCharts(trendData, spatialData);
+                    renderConclusions(summaryData, trendData, spatialData, heterogeneityData);
+                    renderTables(spatialData, heterogeneityData);
+
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('content').classList.remove('hidden');
+                } else {
+                    const errorDetails = [
+                        `trendData: ${trendData ? '✅' : '❌'}`,
+                        `spatialData: ${spatialData ? '✅' : '❌'}`,
+                        `heterogeneityData: ${heterogeneityData ? '✅' : '❌'}`,
+                        `summaryData: ${summaryData ? '✅' : '❌'}`
+                    ].join('<br>');
+                    
+                    document.getElementById('loading').innerHTML = `
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
+                        <p class="mt-4 text-gray-600">数据加载失败，请检查：</p>
+                        <div class="mt-2 text-sm text-gray-500">${errorDetails}</div>
+                        <p class="mt-2 text-sm text-gray-500">请打开浏览器控制台查看详细错误信息</p>
+                        <p class="mt-2 text-sm text-gray-500">请确保所有JSON文件都存在于data目录中</p>
+                    `;
+                    console.error('数据加载失败:', { trendData, spatialData, heterogeneityData, summaryData });
+                }
+            } catch (error) {
+                console.error('初始化过程出错:', error);
                 document.getElementById('loading').innerHTML = `
                     <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
-                    <p class="mt-4 text-gray-600">数据加载失败，请检查：</p>
-                    <div class="mt-2 text-sm text-gray-500">${errorDetails}</div>
+                    <p class="mt-4 text-gray-600">初始化过程出错：</p>
+                    <div class="mt-2 text-sm text-gray-500">${error.message}</div>
                     <p class="mt-2 text-sm text-gray-500">请打开浏览器控制台查看详细错误信息</p>
                 `;
-                console.error('数据加载失败:', { trendData, spatialData, heterogeneityData, summaryData });
             }
         }
 
