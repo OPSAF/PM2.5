@@ -1,0 +1,10 @@
+{
+  "analysis_summary": {
+    "data_range": "2014-2024",
+    "total_cities": 13,
+    "breakpoint_detected": 2020,
+    "bottleneck_significant": false,
+    "morans_i": 0.29953058127771937,
+    "spatial_autocorrelation": true
+  }
+}
