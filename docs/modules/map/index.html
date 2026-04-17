@@ -167,6 +167,8 @@
     <div class="nav-tabs">
         <div class="nav-tab active" onclick="switchTab('scatter', event)">气泡散点图</div>
         <div class="nav-tab" onclick="switchTab('heatmap', event)">浓度热力图</div>
+        <div class="nav-tab" onclick="switchTab('contour', event)">等值线图</div>
+        <div class="nav-tab" onclick="switchTab('trend', event)">空间趋势分析</div>
         <div class="nav-tab" onclick="switchTab('animation', event)">时序动态图</div>
         <div class="nav-tab" onclick="switchTab('info', event)">模型说明</div>
         <a href="../bottleneck/index.html" class="nav-tab" style="color: #00d9ff;">
@@ -236,6 +238,53 @@
             </div>
         </div>
 
+        <div id="contour-section" class="chart-section" style="display:none;">
+            <div class="chart-container">
+                <div class="chart-title">直角坐标系 PM2.5 浓度等值线图</div>
+                <div class="controls">
+                    <div class="control-group">
+                        <span class="control-label">选择年份:</span>
+                        <select id="contour-year-select"></select>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">等值线间隔:</span>
+                        <select id="contour-interval-select">
+                            <option value="10">10 μg/m³</option>
+                            <option value="5" selected>5 μg/m³</option>
+                            <option value="2">2 μg/m³</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="contour-chart" class="chart-wrapper"></div>
+                <div class="legend-note">等值线连接相同浓度点，更清晰展示空间梯度变化</div>
+            </div>
+        </div>
+
+        <div id="trend-section" class="chart-section" style="display:none;">
+            <div class="chart-container">
+                <div class="chart-title">PM2.5 空间趋势分析</div>
+                <div class="controls">
+                    <div class="control-group">
+                        <span class="control-label">分析维度:</span>
+                        <select id="trend-dimension-select">
+                            <option value="east-west">东西方向</option>
+                            <option value="north-south">南北方向</option>
+                            <option value="both" selected>双向分析</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">趋势类型:</span>
+                        <select id="trend-type-select">
+                            <option value="linear">线性趋势</option>
+                            <option value="quadratic">二次曲线</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="trend-chart" class="chart-wrapper"></div>
+                <div class="legend-note">分析PM2.5浓度随地理位置变化的趋势特征</div>
+            </div>
+        </div>
+
         <div id="info-section" class="chart-section" style="display:none;">
             <div class="info-panel">
                 <h3>📊 直角坐标系建模方法说明</h3>
@@ -286,6 +335,8 @@
         let scatterChart = null;
         let heatmapChart = null;
         let animationChart = null;
+        let contourChart = null;
+        let trendChart = null;
         let currentYear = 2010;
         let isPlaying = false;
         let playInterval = null;
@@ -308,28 +359,40 @@
             const years = baseData.years;
             const scatterSelect = document.getElementById('scatter-year-select');
             const heatmapSelect = document.getElementById('heatmap-year-select');
+            const contourSelect = document.getElementById('contour-year-select');
             years.forEach(year => {
                 scatterSelect.innerHTML += `<option value="${year}">${year}年</option>`;
                 heatmapSelect.innerHTML += `<option value="${year}">${year}年</option>`;
+                contourSelect.innerHTML += `<option value="${year}">${year}年</option>`;
             });
             scatterSelect.addEventListener('change', () => updateScatterChart());
             heatmapSelect.addEventListener('change', () => updateHeatmapChart());
+            contourSelect.addEventListener('change', () => updateContourChart());
+            document.getElementById('contour-interval-select').addEventListener('change', () => updateContourChart());
+            document.getElementById('trend-dimension-select').addEventListener('change', () => updateTrendChart());
+            document.getElementById('trend-type-select').addEventListener('change', () => updateTrendChart());
         }
 
         function initCharts() {
             scatterChart = echarts.init(document.getElementById('scatter-chart'));
             heatmapChart = echarts.init(document.getElementById('heatmap-chart'));
             animationChart = echarts.init(document.getElementById('animation-chart'));
+            contourChart = echarts.init(document.getElementById('contour-chart'));
+            trendChart = echarts.init(document.getElementById('trend-chart'));
             if (baseData.years && baseData.years.length > 0) {
                 currentYear = baseData.years[0];
             }
             updateScatterChart();
             updateHeatmapChart();
             updateAnimationChart();
+            updateContourChart();
+            updateTrendChart();
             window.addEventListener('resize', () => {
                 scatterChart.resize();
                 heatmapChart.resize();
                 animationChart.resize();
+                contourChart.resize();
+                trendChart.resize();
             });
         }
 
@@ -709,6 +772,385 @@
             animationChart.setOption(option);
         }
 
+        async function updateContourChart() {
+            const year = parseInt(document.getElementById('contour-year-select').value);
+            const interval = parseInt(document.getElementById('contour-interval-select').value);
+            const heatmapData = await loadHeatmapData(year);
+            if (!heatmapData || heatmapData.length === 0) {
+                contourChart.setOption({
+                    title: { text: '暂无该年份热力图数据', textStyle: { color: '#a0a0a0' } }
+                });
+                return;
+            }
+            const validData = heatmapData.filter(d => d[2] > 0 && !isNaN(d[2]));
+            if (validData.length === 0) {
+                contourChart.setOption({
+                    title: { text: '该年份热力图数据无效', textStyle: { color: '#a0a0a0' } }
+                });
+                return;
+            }
+            const pm25Values = validData.map(d => d[2]);
+            let maxPm25 = Math.max(...pm25Values);
+            let minPm25 = Math.min(...pm25Values);
+            if (minPm25 === maxPm25) {
+                minPm25 = 0;
+                maxPm25 = 100;
+            }
+            const cityMarkers = baseData.cities.map(city => {
+                const cityData = (baseData.city_pm25[city.city] || []).find(d => d.year === year);
+                return {
+                    name: city.city,
+                    value: [city.x, city.y, cityData ? cityData.pm25 : 0],
+                    pm25: cityData ? cityData.pm25 : 0
+                };
+            });
+            const option = {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: `${year}年 京津冀 PM2.5 浓度等值线图`,
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 18 }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: params => {
+                        if (params.seriesType === 'scatter') {
+                            return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³`;
+                        }
+                        return `PM2.5: ${params.value[2].toFixed(1)} μg/m³`;
+                    }
+                },
+                legend: {
+                    data: ['等值线', '城市位置'],
+                    textStyle: { color: '#a0a0a0' },
+                    top: 50
+                },
+                xAxis: {
+                    type: 'value',
+                    name: 'X (km, 东西向)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...baseData.cities.map(c => c.x)) + 50
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Y (km, 南北向)',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...baseData.cities.map(c => c.y)) + 50
+                },
+                visualMap: {
+                    min: 0,
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
+                    calculable: true,
+                    inRange: {
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                    },
+                    right: 20,
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15
+                },
+                series: [
+                    {
+                        name: '等值线',
+                        type: 'contour',
+                        data: validData,
+                        smooth: true,
+                        lineStyle: {
+                            width: 2,
+                            type: 'solid',
+                            color: 'rgba(255, 255, 255, 0.8)'
+                        },
+                        label: {
+                            show: true,
+                            formatter: params => params.value.toFixed(0),
+                            color: '#fff',
+                            fontSize: 10
+                        },
+                        areaStyle: {
+                            opacity: 0.3
+                        },
+                        contours: {
+                            type: 'interval',
+                            interval: interval,
+                            label: {
+                                show: true
+                            }
+                        }
+                    },
+                    {
+                        name: '城市位置',
+                        type: 'scatter',
+                        symbolSize: 12,
+                        data: cityMarkers.filter(c => c.pm25 > 0),
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: '{b}',
+                            color: '#fff',
+                            fontSize: 10,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            padding: [2, 4],
+                            borderRadius: 3
+                        },
+                        itemStyle: {
+                            color: params => {
+                                const pm25 = params.data.pm25;
+                                if (pm25 >= 75) return '#ff0000';
+                                if (pm25 >= 50) return '#ff7e00';
+                                if (pm25 >= 35) return '#ffff00';
+                                return '#00e400';
+                            },
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        zlevel: 2
+                    }
+                ]
+            };
+            contourChart.setOption(option);
+        }
+
+        function updateTrendChart() {
+            const dimension = document.getElementById('trend-dimension-select').value;
+            const trendType = document.getElementById('trend-type-select').value;
+            const years = baseData.years;
+            const cities = baseData.cities;
+            const cityPm25 = baseData.city_pm25;
+            
+            const eastWestData = [];
+            const northSouthData = [];
+            cities.forEach(city => {
+                const data = cityPm25[city.city] || [];
+                const avgPm25 = data.reduce((sum, d) => sum + d.pm25, 0) / data.length || 0;
+                eastWestData.push([city.x, avgPm25, city.city]);
+                northSouthData.push([city.y, avgPm25, city.city]);
+            });
+            
+            eastWestData.sort((a, b) => a[0] - b[0]);
+            northSouthData.sort((a, b) => a[0] - b[0]);
+            
+            const series = [];
+            if (dimension === 'east-west' || dimension === 'both') {
+                series.push({
+                    name: '东西方向',
+                    type: 'scatter',
+                    data: eastWestData.map(d => [d[0], d[1], d[2]]),
+                    itemStyle: {
+                        color: '#00d9ff'
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{b}',
+                        color: '#fff',
+                        fontSize: 10,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: [2, 4],
+                        borderRadius: 3
+                    }
+                });
+                
+                if (trendType === 'linear') {
+                    const xValues = eastWestData.map(d => d[0]);
+                    const yValues = eastWestData.map(d => d[1]);
+                    const trendLine = calculateLinearTrend(xValues, yValues);
+                    series.push({
+                        name: '东西趋势',
+                        type: 'line',
+                        data: trendLine,
+                        lineStyle: {
+                            color: '#00d9ff',
+                            width: 3,
+                            type: 'dashed'
+                        },
+                        symbol: 'none'
+                    });
+                } else {
+                    const xValues = eastWestData.map(d => d[0]);
+                    const yValues = eastWestData.map(d => d[1]);
+                    const trendLine = calculateQuadraticTrend(xValues, yValues);
+                    series.push({
+                        name: '东西趋势',
+                        type: 'line',
+                        data: trendLine,
+                        lineStyle: {
+                            color: '#00d9ff',
+                            width: 3,
+                            type: 'dashed'
+                        },
+                        symbol: 'none'
+                    });
+                }
+            }
+            
+            if (dimension === 'north-south' || dimension === 'both') {
+                series.push({
+                    name: '南北方向',
+                    type: 'scatter',
+                    data: northSouthData.map(d => [d[0], d[1], d[2]]),
+                    itemStyle: {
+                        color: '#ff6b6b'
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{b}',
+                        color: '#fff',
+                        fontSize: 10,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: [2, 4],
+                        borderRadius: 3
+                    }
+                });
+                
+                if (trendType === 'linear') {
+                    const xValues = northSouthData.map(d => d[0]);
+                    const yValues = northSouthData.map(d => d[1]);
+                    const trendLine = calculateLinearTrend(xValues, yValues);
+                    series.push({
+                        name: '南北趋势',
+                        type: 'line',
+                        data: trendLine,
+                        lineStyle: {
+                            color: '#ff6b6b',
+                            width: 3,
+                            type: 'dashed'
+                        },
+                        symbol: 'none'
+                    });
+                } else {
+                    const xValues = northSouthData.map(d => d[0]);
+                    const yValues = northSouthData.map(d => d[1]);
+                    const trendLine = calculateQuadraticTrend(xValues, yValues);
+                    series.push({
+                        name: '南北趋势',
+                        type: 'line',
+                        data: trendLine,
+                        lineStyle: {
+                            color: '#ff6b6b',
+                            width: 3,
+                            type: 'dashed'
+                        },
+                        symbol: 'none'
+                    });
+                }
+            }
+            
+            const option = {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: 'PM2.5 空间趋势分析',
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 18 }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: params => {
+                        if (params.seriesType === 'scatter') {
+                            return `${params.data[2]}<br/>坐标: ${params.data[0].toFixed(1)} km<br/>平均PM2.5: ${params.data[1].toFixed(1)} μg/m³`;
+                        }
+                        return `${params.seriesName}<br/>坐标: ${params.data[0].toFixed(1)} km<br/>预测PM2.5: ${params.data[1].toFixed(1)} μg/m³`;
+                    }
+                },
+                legend: {
+                    data: series.map(s => s.name),
+                    textStyle: { color: '#a0a0a0' },
+                    top: 50
+                },
+                xAxis: {
+                    type: 'value',
+                    name: dimension === 'east-west' ? 'X (km, 东西向)' : dimension === 'north-south' ? 'Y (km, 南北向)' : '坐标 (km)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'PM2.5 浓度 (μg/m³)',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                },
+                series: series
+            };
+            trendChart.setOption(option);
+        }
+
+        function calculateLinearTrend(xValues, yValues) {
+            const n = xValues.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += xValues[i];
+                sumY += yValues[i];
+                sumXY += xValues[i] * yValues[i];
+                sumX2 += xValues[i] * xValues[i];
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            const minX = Math.min(...xValues);
+            const maxX = Math.max(...xValues);
+            const trendLine = [];
+            for (let x = minX; x <= maxX; x += (maxX - minX) / 10) {
+                trendLine.push([x, slope * x + intercept]);
+            }
+            return trendLine;
+        }
+
+        function calculateQuadraticTrend(xValues, yValues) {
+            const n = xValues.length;
+            let sumX = 0, sumY = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0, sumXY = 0, sumX2Y = 0;
+            for (let i = 0; i < n; i++) {
+                const x = xValues[i];
+                const y = yValues[i];
+                sumX += x;
+                sumY += y;
+                sumX2 += x * x;
+                sumX3 += x * x * x;
+                sumX4 += x * x * x * x;
+                sumXY += x * y;
+                sumX2Y += x * x * y;
+            }
+            
+            const A = n * sumX2 - sumX * sumX;
+            const B = n * sumX3 - sumX * sumX2;
+            const C = n * sumX4 - sumX2 * sumX2;
+            const D = n * sumXY - sumX * sumY;
+            const E = n * sumX2Y - sumX2 * sumY;
+            
+            const b = (D * C - B * E) / (A * C - B * B);
+            const c = (A * E - B * D) / (A * C - B * B);
+            const a = (sumY - b * sumX - c * sumX2) / n;
+            
+            const minX = Math.min(...xValues);
+            const maxX = Math.max(...xValues);
+            const trendLine = [];
+            for (let x = minX; x <= maxX; x += (maxX - minX) / 20) {
+                trendLine.push([x, a + b * x + c * x * x]);
+            }
+            return trendLine;
+        }
+
         function togglePlay() {
             isPlaying = !isPlaying;
             const btn = document.getElementById('play-btn');
@@ -765,6 +1207,10 @@
                 setTimeout(() => heatmapChart.resize(), 100);
             } else if (tabName === 'animation' && animationChart) {
                 setTimeout(() => animationChart.resize(), 100);
+            } else if (tabName === 'contour' && contourChart) {
+                setTimeout(() => contourChart.resize(), 100);
+            } else if (tabName === 'trend' && trendChart) {
+                setTimeout(() => trendChart.resize(), 100);
             }
         }
 
