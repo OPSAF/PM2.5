@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京津冀 PM2.5 空间分布 - 直角坐标系建模</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px 40px;
+            border-bottom: 2px solid #00d9ff;
+        }
+        .header h1 {
+            color: #00d9ff;
+            font-size: 28px;
+            text-shadow: 0 0 10px rgba(0,217,255,0.5);
+        }
+        .header p {
+            color: #a0a0a0;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .nav-tabs {
+            display: flex;
+            background: rgba(0,0,0,0.2);
+            padding: 0 40px;
+            border-bottom: 1px solid #333;
+        }
+        .nav-tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            color: #808080;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-size: 15px;
+        }
+        .nav-tab:hover {
+            color: #00d9ff;
+        }
+        .nav-tab.active {
+            color: #00d9ff;
+            border-bottom-color: #00d9ff;
+        }
+        .content {
+            padding: 30px 40px;
+        }
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-title {
+            font-size: 18px;
+            color: #00d9ff;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #00d9ff;
+        }
+        .chart-wrapper {
+            height: 500px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .control-label {
+            color: #a0a0a0;
+            font-size: 14px;
+        }
+        select, button {
+            background: rgba(0,217,255,0.1);
+            border: 1px solid #00d9ff;
+            color: #00d9ff;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        select:hover, button:hover {
+            background: rgba(0,217,255,0.2);
+        }
+        button.active {
+            background: #00d9ff;
+            color: #1a1a2e;
+        }
+        .play-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .info-panel {
+            background: rgba(0,217,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .info-panel h3 {
+            color: #00d9ff;
+            margin-bottom: 15px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .info-item {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .info-item .label {
+            color: #808080;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .info-item .value {
+            color: #00d9ff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            color: #00d9ff;
+            font-size: 18px;
+        }
+        .legend-note {
+            color: #808080;
+            font-size: 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>京津冀 PM2.5 空间分布 - 直角坐标系建模</h1>
+        <p>基于WGS84平面直角坐标系，还原城市真实地理位置，结合ECharts实现空间可视化</p>
+    </div>
+
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('scatter', event)">气泡散点图</div>
+        <div class="nav-tab" onclick="switchTab('heatmap', event)">浓度热力图</div>
+        <div class="nav-tab" onclick="switchTab('animation', event)">时序动态图</div>
+        <div class="nav-tab" onclick="switchTab('info', event)">模型说明</div>
+        <a href="../bottleneck/index.html" class="nav-tab" style="color: #00d9ff;">
+            <i class="fas fa-chart-line mr-1"></i>瓶颈分析
+        </a>
+    </div>
+
+    <div class="content">
+        <div id="scatter-section" class="chart-section">
+            <div class="chart-container">
+                <div class="chart-title">直角坐标系 PM2.5 气泡散点图</div>
+                <div class="controls">
+                    <div class="control-group">
+                        <span class="control-label">选择年份:</span>
+                        <select id="scatter-year-select"></select>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">气泡缩放:</span>
+                        <select id="scatter-size-select">
+                            <option value="small">小</option>
+                            <option value="medium" selected>中</option>
+                            <option value="large">大</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="scatter-chart" class="chart-wrapper"></div>
+                <div class="legend-note">气泡大小和颜色代表PM2.5浓度，悬停查看城市详情</div>
+            </div>
+        </div>
+
+        <div id="heatmap-section" class="chart-section" style="display:none;">
+            <div class="chart-container">
+                <div class="chart-title">直角坐标系 PM2.5 浓度热力图</div>
+                <div class="controls">
+                    <div class="control-group">
+                        <span class="control-label">选择年份:</span>
+                        <select id="heatmap-year-select"></select>
+                    </div>
+                </div>
+                <div id="heatmap-chart" class="chart-wrapper"></div>
+                <div class="legend-note">颜色深浅代表PM2.5浓度空间分布，使用克里金插值生成</div>
+            </div>
+        </div>
+
+        <div id="animation-section" class="chart-section" style="display:none;">
+            <div class="chart-container">
+                <div class="chart-title">2010-2024年 PM2.5 浓度时序动态变化</div>
+                <div class="controls">
+                    <button id="play-btn" class="play-btn" onclick="togglePlay()">
+                        <span id="play-icon">▶</span>
+                        <span id="play-text">播放</span>
+                    </button>
+                    <div class="control-group">
+                        <span class="control-label">播放速度:</span>
+                        <select id="speed-select" onchange="updateSpeed()">
+                            <option value="2000">慢 (2秒)</option>
+                            <option value="1000" selected>中 (1秒)</option>
+                            <option value="500">快 (0.5秒)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label" id="current-year-display">当前年份: 2010</span>
+                    </div>
+                </div>
+                <div id="animation-chart" class="chart-wrapper"></div>
+                <div class="legend-note">自动播放逐年PM2.5浓度变化，直观展现污染演变趋势</div>
+            </div>
+        </div>
+
+        <div id="info-section" class="chart-section" style="display:none;">
+            <div class="info-panel">
+                <h3>📊 直角坐标系建模方法说明</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">原点设定</div>
+                        <div class="value">保定市徐水区 (115.5°E, 38.8°N)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">X轴定义</div>
+                        <div class="value">东西方向 (东正西负)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Y轴定义</div>
+                        <div class="value">南北方向 (北正南负)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">坐标单位</div>
+                        <div class="value">千米 (km)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">插值方法</div>
+                        <div class="value">克里金插值 (Kriging)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">可视化引擎</div>
+                        <div class="value">Apache ECharts</div>
+                    </div>
+                </div>
+                <h3 style="margin-top:20px;">📐 坐标转换公式</h3>
+                <p style="color:#a0a0a0;line-height:1.8;margin-top:10px;">
+                    x = R × (λ - λ₀) × cos(φ₀)  <br>
+                    y = R × (φ - φ₀) <br>
+                    其中 R=6371km (地球半径), λ为经度, φ为纬度, (λ₀,φ₀)为原点
+                </p>
+                <h3 style="margin-top:20px;">📈 回归模型设定</h3>
+                <p style="color:#a0a0a0;line-height:1.8;margin-top:10px;">
+                    z_it = α₀ + β₁xᵢ + β₂yᵢ + β₃xᵢyᵢ + μᵢ + λₜ + εᵢₜ <br>
+                    其中 z 为 PM2.5 浓度, x,y 为直角坐标, μᵢ 为城市固定效应, λₜ 为时间固定效应
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let baseData = null;
+        let heatmapDataCache = {};
+        let scatterChart = null;
+        let heatmapChart = null;
+        let animationChart = null;
+        let currentYear = 2010;
+        let isPlaying = false;
+        let playInterval = null;
+        let playSpeed = 1000;
+
+        async function loadData() {
+            try {
+                const response = await fetch('data/base_data.json');
+                baseData = await response.json();
+                initSelectors();
+                initCharts();
+            } catch (error) {
+                console.error('数据加载失败:', error);
+                document.querySelector('.chart-wrapper').innerHTML =
+                    '<div class="loading">数据加载失败，请确保通过本地服务器打开HTML文件</div>';
+            }
+        }
+
+        function initSelectors() {
+            const years = baseData.years;
+            const scatterSelect = document.getElementById('scatter-year-select');
+            const heatmapSelect = document.getElementById('heatmap-year-select');
+            years.forEach(year => {
+                scatterSelect.innerHTML += `<option value="${year}">${year}年</option>`;
+                heatmapSelect.innerHTML += `<option value="${year}">${year}年</option>`;
+            });
+            scatterSelect.addEventListener('change', () => updateScatterChart());
+            heatmapSelect.addEventListener('change', () => updateHeatmapChart());
+        }
+
+        function initCharts() {
+            scatterChart = echarts.init(document.getElementById('scatter-chart'));
+            heatmapChart = echarts.init(document.getElementById('heatmap-chart'));
+            animationChart = echarts.init(document.getElementById('animation-chart'));
+            if (baseData.years && baseData.years.length > 0) {
+                currentYear = baseData.years[0];
+            }
+            updateScatterChart();
+            updateHeatmapChart();
+            updateAnimationChart();
+            window.addEventListener('resize', () => {
+                scatterChart.resize();
+                heatmapChart.resize();
+                animationChart.resize();
+            });
+        }
+
+        function getSizeMultiplier() {
+            const select = document.getElementById('scatter-size-select');
+            return select.value === 'small' ? 0.5 : select.value === 'large' ? 2 : 1;
+        }
+
+        function updateScatterChart() {
+            const year = parseInt(document.getElementById('scatter-year-select').value);
+            const sizeMultiplier = getSizeMultiplier();
+            const cityPm25 = baseData.city_pm25;
+            const cities = baseData.cities;
+            const pm25Values = [];
+            cities.forEach(city => {
+                const data = cityPm25[city.city] || [];
+                const yearData = data.find(d => d.year === year);
+                if (yearData) {
+                    pm25Values.push({
+                        name: city.city,
+                        value: [city.x, city.y, yearData.pm25],
+                        pm25: yearData.pm25
+                    });
+                }
+            });
+            const maxPm25 = Math.max(...pm25Values.map(d => d.pm25));
+            const minPm25 = Math.min(...pm25Values.map(d => d.pm25));
+            const range = maxPm25 - minPm25 || 1;
+            const option = {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: `${year}年 京津冀 PM2.5 气泡散点图`,
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 18 }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: params => `${params.data.name}<br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`
+                },
+                xAxis: {
+                    type: 'value',
+                    name: 'X (km, 东西向)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.x)) + 50
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Y (km, 南北向)',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.y)) + 50
+                },
+                visualMap: {
+                    min: 0,
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
+                    calculable: true,
+                    inRange: {
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                    },
+                    right: 20,
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15
+                },
+                series: [{
+                    type: 'scatter',
+                    symbolSize: val => 25 + (val[2] / Math.max(maxPm25, 100)) * 50 * sizeMultiplier,
+                    data: pm25Values,
+                    itemStyle: {
+                        color: params => {
+                            const pm25 = params.data.pm25;
+                            if (pm25 >= 75) return '#ff0000';
+                            if (pm25 >= 50) return '#ff7e00';
+                            if (pm25 >= 35) return '#ffff00';
+                            if (pm25 >= 25) return '#92d050';
+                            return '#00e400';
+                        },
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        shadowBlur: 15,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            borderColor: '#00d9ff',
+                            borderWidth: 3,
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(0, 217, 255, 0.8)'
+                        }
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{b}',
+                        color: '#fff',
+                        fontSize: 11,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: [3, 6],
+                        borderRadius: 4
+                    }
+                }]
+            };
+            scatterChart.setOption(option);
+        }
+
+        async function loadHeatmapData(year) {
+            if (heatmapDataCache[year]) {
+                return heatmapDataCache[year];
+            }
+            try {
+                const response = await fetch(`data/heatmap_${year}.json`);
+                const data = await response.json();
+                heatmapDataCache[year] = data;
+                return data;
+            } catch (error) {
+                console.warn(`热力图数据加载失败: ${year}`);
+                return null;
+            }
+        }
+
+        async function updateHeatmapChart() {
+            const year = parseInt(document.getElementById('heatmap-year-select').value);
+            const heatmapData = await loadHeatmapData(year);
+            if (!heatmapData || heatmapData.length === 0) {
+                heatmapChart.setOption({
+                    title: { text: '暂无该年份热力图数据', textStyle: { color: '#a0a0a0' } }
+                });
+                return;
+            }
+            const validData = heatmapData.filter(d => d[2] > 0 && !isNaN(d[2]));
+            if (validData.length === 0) {
+                heatmapChart.setOption({
+                    title: { text: '该年份热力图数据无效', textStyle: { color: '#a0a0a0' } }
+                });
+                return;
+            }
+            const pm25Values = validData.map(d => d[2]);
+            let maxPm25 = Math.max(...pm25Values);
+            let minPm25 = Math.min(...pm25Values);
+            if (minPm25 === maxPm25) {
+                minPm25 = 0;
+                maxPm25 = 100;
+            }
+            const cityMarkers = baseData.cities.map(city => {
+                const cityData = (baseData.city_pm25[city.city] || []).find(d => d.year === year);
+                return {
+                    name: city.city,
+                    value: [city.x, city.y, cityData ? cityData.pm25 : 0],
+                    pm25: cityData ? cityData.pm25 : 0
+                };
+            });
+            const option = {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: `${year}年 京津冀 PM2.5 浓度空间分布`,
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 18 }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: params => {
+                        if (params.seriesType === 'scatter') {
+                            return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`;
+                        }
+                        return `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`;
+                    }
+                },
+                legend: {
+                    data: ['热力分布', '城市位置'],
+                    textStyle: { color: '#a0a0a0' },
+                    top: 50
+                },
+                xAxis: {
+                    type: 'value',
+                    name: 'X (km, 东西向)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...baseData.cities.map(c => c.x)) + 50
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Y (km, 南北向)',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...baseData.cities.map(c => c.y)) + 50
+                },
+                visualMap: {
+                    min: 0,
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
+                    calculable: true,
+                    inRange: {
+                        color: ['#00e400', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                    },
+                    right: 20,
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15,
+                    formatter: function(value) {
+                        if (value >= 75) return '重度污染 ' + value;
+                        if (value >= 50) return '中度污染 ' + value;
+                        if (value >= 35) return '轻度污染 ' + value;
+                        return '优良 ' + value;
+                    }
+                },
+                series: [
+                    {
+                        name: '热力分布',
+                        type: 'heatmap',
+                        data: validData,
+                        emphasis: {
+                            itemStyle: { borderColor: '#fff', borderWidth: 1 }
+                        },
+                        blurSize: 20
+                    },
+                    {
+                        name: '城市位置',
+                        type: 'scatter',
+                        symbolSize: 18,
+                        data: cityMarkers.filter(c => c.pm25 > 0),
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: '{b}',
+                            color: '#fff',
+                            fontSize: 10,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            padding: [2, 4],
+                            borderRadius: 3
+                        },
+                        itemStyle: {
+                            color: params => {
+                                const pm25 = params.data.pm25;
+                                if (pm25 >= 75) return '#ff0000';
+                                if (pm25 >= 50) return '#ff7e00';
+                                if (pm25 >= 35) return '#ffff00';
+                                return '#00e400';
+                            },
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        },
+                        zlevel: 2
+                    }
+                ]
+            };
+            heatmapChart.setOption(option);
+        }
+
+        async function updateAnimationChart() {
+            let year = currentYear;
+            if (!baseData.years.includes(year)) {
+                year = baseData.years[0];
+                currentYear = year;
+            }
+            const cityPm25 = baseData.city_pm25;
+            const cities = baseData.cities;
+            const pm25Values = [];
+            cities.forEach(city => {
+                const data = cityPm25[city.city] || [];
+                const yearData = data.find(d => d.year === year);
+                if (yearData) {
+                    pm25Values.push({
+                        name: city.city,
+                        value: [city.x, city.y, yearData.pm25],
+                        pm25: yearData.pm25
+                    });
+                }
+            });
+            const yearDataArray = cities.flatMap(city => (baseData.city_pm25[city.city] || []).map(d => d.pm25));
+            const maxPm25 = Math.max(...yearDataArray);
+            const option = {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: `${year}年 京津冀 PM2.5 空间分布`,
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 20 }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: params =>
+                        `${params.data.name}<br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`
+                },
+                xAxis: {
+                    type: 'value',
+                    name: 'X (km, 东西向)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.x)) + 50
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Y (km, 南北向)',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
+                    axisLine: { lineStyle: { color: '#00d9ff' } },
+                    axisLabel: { color: '#a0a0a0' },
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.y)) + 50
+                },
+                visualMap: {
+                    min: 0,
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
+                    calculable: true,
+                    inRange: {
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                    },
+                    right: 20,
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15
+                },
+                series: [{
+                    type: 'scatter',
+                    symbolSize: val => 25 + (val[2] / Math.max(maxPm25, 100)) * 50,
+                    data: pm25Values,
+                    itemStyle: {
+                        color: params => {
+                            const pm25 = params.data.pm25;
+                            if (pm25 >= 75) return '#ff0000';
+                            if (pm25 >= 50) return '#ff7e00';
+                            if (pm25 >= 35) return '#ffff00';
+                            if (pm25 >= 25) return '#92d050';
+                            return '#00e400';
+                        },
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        shadowBlur: 15,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{b}',
+                        color: '#fff',
+                        fontSize: 10,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: [2, 4],
+                        borderRadius: 3
+                    }
+                }]
+            };
+            animationChart.setOption(option);
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+            const icon = document.getElementById('play-icon');
+            const text = document.getElementById('play-text');
+            if (isPlaying) {
+                icon.textContent = '⏸';
+                text.textContent = '暂停';
+                btn.classList.add('active');
+                playInterval = setInterval(() => {
+                    currentYear++;
+                    if (currentYear > baseData.years[baseData.years.length - 1]) {
+                        currentYear = baseData.years[0];
+                    }
+                    document.getElementById('current-year-display').textContent = `当前年份: ${currentYear}`;
+                    updateAnimationChart();
+                }, playSpeed);
+            } else {
+                icon.textContent = '▶';
+                text.textContent = '播放';
+                btn.classList.remove('active');
+                clearInterval(playInterval);
+            }
+        }
+
+        function updateSpeed() {
+            playSpeed = parseInt(document.getElementById('speed-select').value);
+            if (isPlaying) {
+                clearInterval(playInterval);
+                playInterval = setInterval(() => {
+                    currentYear++;
+                    if (currentYear > baseData.years[baseData.years.length - 1]) {
+                        currentYear = baseData.years[0];
+                    }
+                    document.getElementById('current-year-display').textContent = `当前年份: ${currentYear}`;
+                    updateAnimationChart();
+                }, playSpeed);
+            }
+        }
+
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            document.querySelectorAll('.chart-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            const targetSection = document.getElementById(`${tabName}-section`);
+            targetSection.style.display = 'block';
+            if (tabName === 'heatmap' && heatmapChart) {
+                setTimeout(() => heatmapChart.resize(), 100);
+            } else if (tabName === 'animation' && animationChart) {
+                setTimeout(() => animationChart.resize(), 100);
+            }
+        }
+
+        window.addEventListener('load', loadData);
+    </script>
+</body>
+</html>
