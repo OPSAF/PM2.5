@@ -356,7 +356,10 @@
         }
 
         function initSelectors() {
-            const years = baseData.years;
+            const years = [];
+            for (let year = baseData.year_range[0]; year <= baseData.year_range[1]; year++) {
+                years.push(year);
+            }
             const scatterSelect = document.getElementById('scatter-year-select');
             const heatmapSelect = document.getElementById('heatmap-year-select');
             const contourSelect = document.getElementById('contour-year-select');
@@ -379,9 +382,7 @@
             animationChart = echarts.init(document.getElementById('animation-chart'));
             contourChart = echarts.init(document.getElementById('contour-chart'));
             trendChart = echarts.init(document.getElementById('trend-chart'));
-            if (baseData.years && baseData.years.length > 0) {
-                currentYear = baseData.years[0];
-            }
+            currentYear = baseData.year_range[0];
             updateScatterChart();
             updateHeatmapChart();
             updateAnimationChart();
@@ -669,8 +670,12 @@
 
         async function updateAnimationChart() {
             let year = currentYear;
-            if (!baseData.years.includes(year)) {
-                year = baseData.years[0];
+            const years = [];
+            for (let y = baseData.year_range[0]; y <= baseData.year_range[1]; y++) {
+                years.push(y);
+            }
+            if (!years.includes(year)) {
+                year = years[0];
                 currentYear = year;
             }
             const cityPm25 = baseData.city_pm25;
@@ -1162,8 +1167,8 @@
                 btn.classList.add('active');
                 playInterval = setInterval(() => {
                     currentYear++;
-                    if (currentYear > baseData.years[baseData.years.length - 1]) {
-                        currentYear = baseData.years[0];
+                    if (currentYear > baseData.year_range[1]) {
+                        currentYear = baseData.year_range[0];
                     }
                     document.getElementById('current-year-display').textContent = `当前年份: ${currentYear}`;
                     updateAnimationChart();
@@ -1182,8 +1187,8 @@
                 clearInterval(playInterval);
                 playInterval = setInterval(() => {
                     currentYear++;
-                    if (currentYear > baseData.years[baseData.years.length - 1]) {
-                        currentYear = baseData.years[0];
+                    if (currentYear > baseData.year_range[1]) {
+                        currentYear = baseData.year_range[0];
                     }
                     document.getElementById('current-year-display').textContent = `当前年份: ${currentYear}`;
                     updateAnimationChart();
