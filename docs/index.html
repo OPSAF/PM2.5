@@ -1082,12 +1082,12 @@
             });
 
             charts.accelChart = new Chart(document.getElementById('accelChart'), {
-                type: 'gauge',
+                type: 'bar',
                 data: {
+                    labels: ['下降加速度指数'],
                     datasets: [{
-                        value: accelIdx !== null ? accelIdx * 100 : 0,
-                        minValue: -100,
-                        maxValue: 100,
+                        label: '加速度指数',
+                        data: [accelIdx !== null ? accelIdx * 100 : 0],
                         backgroundColor: accelIdx < 0 ? '#EF4444' : '#10B981'
                     }]
                 },
@@ -1097,6 +1097,13 @@
                     plugins: {
                         title: { display: false },
                         legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: '加速度指数 (%)' },
+                            min: -100,
+                            max: 100
+                        }
                     }
                 }
             });
