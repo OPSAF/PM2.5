@@ -165,10 +165,10 @@
     </div>
 
     <div class="nav-tabs">
-        <div class="nav-tab active" onclick="switchTab('scatter')">气泡散点图</div>
-        <div class="nav-tab" onclick="switchTab('heatmap')">浓度热力图</div>
-        <div class="nav-tab" onclick="switchTab('animation')">时序动态图</div>
-        <div class="nav-tab" onclick="switchTab('info')">模型说明</div>
+        <div class="nav-tab active" onclick="switchTab('scatter', event)">气泡散点图</div>
+        <div class="nav-tab" onclick="switchTab('heatmap', event)">浓度热力图</div>
+        <div class="nav-tab" onclick="switchTab('animation', event)">时序动态图</div>
+        <div class="nav-tab" onclick="switchTab('info', event)">模型说明</div>
         <a href="../bottleneck/index.html" class="nav-tab" style="color: #00d9ff;">
             <i class="fas fa-chart-line mr-1"></i>瓶颈分析
         </a>
@@ -621,11 +621,13 @@
             }
         }
 
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             document.querySelectorAll('.chart-section').forEach(section => {
                 section.style.display = 'none';
             });
