@@ -568,10 +568,17 @@
                 tooltip: {
                     trigger: 'item',
                     formatter: params => {
+                        console.log('热力图 tooltip params:', params);
                         if (params.seriesType === 'scatter') {
-                            return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`;
+                            if (params.data && params.data.name && params.data.pm25 && params.data.value && Array.isArray(params.data.value)) {
+                                return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`;
+                            }
+                        } else if (params.seriesType === 'heatmap') {
+                            if (params.data && params.data.value && Array.isArray(params.data.value) && params.data.value.length >= 3) {
+                                return `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`;
+                            }
                         }
-                        return `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`;
+                        return '数据加载中...';
                     }
                 },
                 legend: {
@@ -821,10 +828,19 @@
                 tooltip: {
                     trigger: 'item',
                     formatter: params => {
+                        console.log('等值线图 tooltip params:', params);
                         if (params.seriesType === 'scatter') {
-                            return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³`;
+                            if (params.data && params.data.name && params.data.pm25) {
+                                return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³`;
+                            }
+                        } else if (params.seriesType === 'contour') {
+                            if (typeof params.value === 'number') {
+                                return `PM2.5: ${params.value.toFixed(1)} μg/m³`;
+                            } else if (params.data && params.data.value && Array.isArray(params.data.value) && params.data.value.length >= 3) {
+                                return `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`;
+                            }
                         }
-                        return `PM2.5: ${params.value[2].toFixed(1)} μg/m³`;
+                        return '数据加载中...';
                     }
                 },
                 legend: {
