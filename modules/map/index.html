@@ -320,6 +320,9 @@
             scatterChart = echarts.init(document.getElementById('scatter-chart'));
             heatmapChart = echarts.init(document.getElementById('heatmap-chart'));
             animationChart = echarts.init(document.getElementById('animation-chart'));
+            if (baseData.years && baseData.years.length > 0) {
+                currentYear = baseData.years[0];
+            }
             updateScatterChart();
             updateHeatmapChart();
             updateAnimationChart();
@@ -443,9 +446,20 @@
                 });
                 return;
             }
-            const pm25Values = heatmapData.map(d => d[2]);
-            const maxPm25 = Math.max(...pm25Values);
-            const minPm25 = Math.min(...pm25Values);
+            const validData = heatmapData.filter(d => d[2] > 0 && !isNaN(d[2]));
+            if (validData.length === 0) {
+                heatmapChart.setOption({
+                    title: { text: '该年份热力图数据无效', textStyle: { color: '#a0a0a0' } }
+                });
+                return;
+            }
+            const pm25Values = validData.map(d => d[2]);
+            let maxPm25 = Math.max(...pm25Values);
+            let minPm25 = Math.min(...pm25Values);
+            if (minPm25 === maxPm25) {
+                minPm25 = 0;
+                maxPm25 = 100;
+            }
             const option = {
                 backgroundColor: 'rgba(0,0,0,0.3)',
                 tooltip: {
@@ -487,7 +501,7 @@
                 },
                 series: [{
                     type: 'heatmap',
-                    data: heatmapData.map(d => [d[0], d[1], d[2]]),
+                    data: validData,
                     emphasis: {
                         itemStyle: { borderColor: '#fff', borderWidth: 1 }
                     }
@@ -497,7 +511,11 @@
         }
 
         async function updateAnimationChart() {
-            const year = currentYear;
+            let year = currentYear;
+            if (!baseData.years.includes(year)) {
+                year = baseData.years[0];
+                currentYear = year;
+            }
             const cityPm25 = baseData.city_pm25;
             const cities = baseData.cities;
             const pm25Values = [];
@@ -631,7 +649,13 @@
             document.querySelectorAll('.chart-section').forEach(section => {
                 section.style.display = 'none';
             });
-            document.getElementById(`${tabName}-section`).style.display = 'block';
+            const targetSection = document.getElementById(`${tabName}-section`);
+            targetSection.style.display = 'block';
+            if (tabName === 'heatmap' && heatmapChart) {
+                setTimeout(() => heatmapChart.resize(), 100);
+            } else if (tabName === 'animation' && animationChart) {
+                setTimeout(() => animationChart.resize(), 100);
+            }
         }
 
         window.addEventListener('load', loadData);
