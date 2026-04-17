@@ -787,13 +787,15 @@
                 });
                 return;
             }
-            const validData = heatmapData.filter(d => d[2] > 0 && !isNaN(d[2]));
+            const validData = heatmapData.filter(d => d[2] > 0 && !isNaN(d[2]) && d[2] < 500);
             if (validData.length === 0) {
                 contourChart.setOption({
                     title: { text: '该年份热力图数据无效', textStyle: { color: '#a0a0a0' } }
                 });
                 return;
             }
+            console.log('等值线图数据:', validData.length, '个有效点');
+            console.log('数据范围:', Math.min(...validData.map(d => d[2])), '到', Math.max(...validData.map(d => d[2])));
             const pm25Values = validData.map(d => d[2]);
             let maxPm25 = Math.max(...pm25Values);
             let minPm25 = Math.min(...pm25Values);
@@ -839,7 +841,7 @@
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
                     splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
-                    min: 0,
+                    min: Math.min(...baseData.cities.map(c => c.x)) - 50,
                     max: Math.max(...baseData.cities.map(c => c.x)) + 50
                 },
                 yAxis: {
@@ -851,7 +853,7 @@
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
                     splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
-                    min: 0,
+                    min: Math.min(...baseData.cities.map(c => c.y)) - 50,
                     max: Math.max(...baseData.cities.map(c => c.y)) + 50
                 },
                 visualMap: {
@@ -892,7 +894,8 @@
                             type: 'interval',
                             interval: interval,
                             label: {
-                                show: true
+                                show: true,
+                                formatter: '{value}'
                             }
                         }
                     },
