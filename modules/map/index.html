@@ -357,8 +357,14 @@
             });
             const maxPm25 = Math.max(...pm25Values.map(d => d.pm25));
             const minPm25 = Math.min(...pm25Values.map(d => d.pm25));
+            const range = maxPm25 - minPm25 || 1;
             const option = {
                 backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: `${year}年 京津冀 PM2.5 气泡散点图`,
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 18 }
+                },
                 tooltip: {
                     trigger: 'item',
                     formatter: params => `${params.data.name}<br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`
@@ -371,7 +377,9 @@
                     nameTextStyle: { color: '#00d9ff', fontSize: 12 },
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.x)) + 50
                 },
                 yAxis: {
                     type: 'value',
@@ -381,41 +389,59 @@
                     nameTextStyle: { color: '#00d9ff', fontSize: 12 },
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.y)) + 50
                 },
                 visualMap: {
-                    min: minPm25,
-                    max: maxPm25,
-                    text: ['高浓度', '低浓度'],
-                    textStyle: { color: '#a0a0a0' },
+                    min: 0,
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
-                    inRange: { color: ['#00ff00', '#ffff00', '#ff0000'] },
+                    inRange: {
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                    },
                     right: 20,
-                    top: 'center'
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15
                 },
                 series: [{
                     type: 'scatter',
-                    symbolSize: val => 15 + (val[2] / maxPm25) * 30 * sizeMultiplier,
+                    symbolSize: val => 25 + (val[2] / Math.max(maxPm25, 100)) * 50 * sizeMultiplier,
                     data: pm25Values,
                     itemStyle: {
                         color: params => {
-                            const ratio = (params.data.pm25 - minPm25) / (maxPm25 - minPm25);
-                            if (ratio < 0.5) {
-                                return echarts.color.lift('#00ff00', ratio * 2);
-                            } else {
-                                return echarts.color.lift('#ffff00', (ratio - 0.5) * 2);
-                            }
-                        }
+                            const pm25 = params.data.pm25;
+                            if (pm25 >= 75) return '#ff0000';
+                            if (pm25 >= 50) return '#ff7e00';
+                            if (pm25 >= 35) return '#ffff00';
+                            if (pm25 >= 25) return '#92d050';
+                            return '#00e400';
+                        },
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        shadowBlur: 15,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
                     },
                     emphasis: {
-                        itemStyle: { borderColor: '#00d9ff', borderWidth: 2 }
+                        itemStyle: {
+                            borderColor: '#00d9ff',
+                            borderWidth: 3,
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(0, 217, 255, 0.8)'
+                        }
                     },
                     label: {
                         show: true,
-                        position: 'right',
+                        position: 'top',
                         formatter: '{b}',
-                        color: '#e0e0e0',
-                        fontSize: 11
+                        color: '#fff',
+                        fontSize: 11,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: [3, 6],
+                        borderRadius: 4
                     }
                 }]
             };
@@ -460,52 +486,120 @@
                 minPm25 = 0;
                 maxPm25 = 100;
             }
+            const cityMarkers = baseData.cities.map(city => {
+                const cityData = (baseData.city_pm25[city.city] || []).find(d => d.year === year);
+                return {
+                    name: city.city,
+                    value: [city.x, city.y, cityData ? cityData.pm25 : 0],
+                    pm25: cityData ? cityData.pm25 : 0
+                };
+            });
             const option = {
                 backgroundColor: 'rgba(0,0,0,0.3)',
+                title: {
+                    text: `${year}年 京津冀 PM2.5 浓度空间分布`,
+                    left: 'center',
+                    textStyle: { color: '#00d9ff', fontSize: 18 }
+                },
                 tooltip: {
-                    formatter: params =>
-                        `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`
+                    trigger: 'item',
+                    formatter: params => {
+                        if (params.seriesType === 'scatter') {
+                            return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³<br/>坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km`;
+                        }
+                        return `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`;
+                    }
+                },
+                legend: {
+                    data: ['热力分布', '城市位置'],
+                    textStyle: { color: '#a0a0a0' },
+                    top: 50
                 },
                 xAxis: {
                     type: 'value',
-                    name: 'X (km)',
+                    name: 'X (km, 东西向)',
                     nameLocation: 'middle',
                     nameGap: 30,
                     nameTextStyle: { color: '#00d9ff', fontSize: 12 },
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...baseData.cities.map(c => c.x)) + 50
                 },
                 yAxis: {
                     type: 'value',
-                    name: 'Y (km)',
+                    name: 'Y (km, 南北向)',
                     nameLocation: 'middle',
                     nameGap: 40,
                     nameTextStyle: { color: '#00d9ff', fontSize: 12 },
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...baseData.cities.map(c => c.y)) + 50
                 },
                 visualMap: {
-                    min: minPm25,
-                    max: maxPm25,
-                    text: ['高浓度', '低浓度'],
-                    textStyle: { color: '#a0a0a0' },
+                    min: 0,
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
                     inRange: {
-                        color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
-                                '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+                        color: ['#00e400', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
                     },
                     right: 20,
-                    top: 'center'
-                },
-                series: [{
-                    type: 'heatmap',
-                    data: validData,
-                    emphasis: {
-                        itemStyle: { borderColor: '#fff', borderWidth: 1 }
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15,
+                    formatter: function(value) {
+                        if (value >= 75) return '重度污染 ' + value;
+                        if (value >= 50) return '中度污染 ' + value;
+                        if (value >= 35) return '轻度污染 ' + value;
+                        return '优良 ' + value;
                     }
-                }]
+                },
+                series: [
+                    {
+                        name: '热力分布',
+                        type: 'heatmap',
+                        data: validData,
+                        emphasis: {
+                            itemStyle: { borderColor: '#fff', borderWidth: 1 }
+                        },
+                        blurSize: 20
+                    },
+                    {
+                        name: '城市位置',
+                        type: 'scatter',
+                        symbolSize: 18,
+                        data: cityMarkers.filter(c => c.pm25 > 0),
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: '{b}',
+                            color: '#fff',
+                            fontSize: 10,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            padding: [2, 4],
+                            borderRadius: 3
+                        },
+                        itemStyle: {
+                            color: params => {
+                                const pm25 = params.data.pm25;
+                                if (pm25 >= 75) return '#ff0000';
+                                if (pm25 >= 50) return '#ff7e00';
+                                if (pm25 >= 35) return '#ffff00';
+                                return '#00e400';
+                            },
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        },
+                        zlevel: 2
+                    }
+                ]
             };
             heatmapChart.setOption(option);
         }
@@ -530,7 +624,8 @@
                     });
                 }
             });
-            const maxPm25 = 150;
+            const yearDataArray = cities.flatMap(city => (baseData.city_pm25[city.city] || []).map(d => d.pm25));
+            const maxPm25 = Math.max(...yearDataArray);
             const option = {
                 backgroundColor: 'rgba(0,0,0,0.3)',
                 title: {
@@ -545,54 +640,69 @@
                 },
                 xAxis: {
                     type: 'value',
-                    name: 'X (km)',
+                    name: 'X (km, 东西向)',
                     nameLocation: 'middle',
                     nameGap: 30,
                     nameTextStyle: { color: '#00d9ff', fontSize: 12 },
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.x)) + 50
                 },
                 yAxis: {
                     type: 'value',
-                    name: 'Y (km)',
+                    name: 'Y (km, 南北向)',
                     nameLocation: 'middle',
                     nameGap: 40,
                     nameTextStyle: { color: '#00d9ff', fontSize: 12 },
                     axisLine: { lineStyle: { color: '#00d9ff' } },
                     axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } }
+                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
+                    min: 0,
+                    max: Math.max(...cities.map(c => c.y)) + 50
                 },
                 visualMap: {
                     min: 0,
-                    max: maxPm25,
-                    text: ['高浓度', '低浓度'],
-                    textStyle: { color: '#a0a0a0' },
+                    max: Math.max(100, maxPm25),
+                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
-                    inRange: { color: ['#00ff00', '#ffff00', '#ff0000'] },
+                    inRange: {
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                    },
                     right: 20,
-                    top: 'center'
+                    top: 'center',
+                    itemHeight: 200,
+                    itemWidth: 15
                 },
                 series: [{
                     type: 'scatter',
-                    symbolSize: val => 12 + (val[2] / maxPm25) * 25,
+                    symbolSize: val => 25 + (val[2] / Math.max(maxPm25, 100)) * 50,
                     data: pm25Values,
                     itemStyle: {
                         color: params => {
-                            const ratio = Math.min(params.data.pm25 / maxPm25, 1);
-                            if (ratio < 0.5) {
-                                return echarts.color.lift('#00ff00', ratio * 2);
-                            } else {
-                                return echarts.color.lift('#ffff00', (ratio - 0.5) * 2);
-                            }
-                        }
+                            const pm25 = params.data.pm25;
+                            if (pm25 >= 75) return '#ff0000';
+                            if (pm25 >= 50) return '#ff7e00';
+                            if (pm25 >= 35) return '#ffff00';
+                            if (pm25 >= 25) return '#92d050';
+                            return '#00e400';
+                        },
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        shadowBlur: 15,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
                     },
                     label: {
                         show: true,
-                        position: 'right',
+                        position: 'top',
                         formatter: '{b}',
-                        color: '#e0e0e0',
-                        fontSize: 10
+                        color: '#fff',
+                        fontSize: 10,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        padding: [2, 4],
+                        borderRadius: 3
                     }
                 }]
             };
