@@ -811,11 +811,11 @@
                 maxPm25 = 100;
             }
             const cityMarkers = baseData.cities.map(city => {
-                const cityData = (baseData.city_pm25[city.city] || []).find(d => d.year === year);
+                const cityData = validData.find(d => Math.abs(d[0] - city.x) < 10 && Math.abs(d[1] - city.y) < 10);
                 return {
-                    name: city.city,
-                    value: [city.x, city.y, cityData ? cityData.pm25 : 0],
-                    pm25: cityData ? cityData.pm25 : 0
+                    name: city.name,
+                    value: [city.x, city.y, cityData ? cityData[2] : 0],
+                    pm25: cityData ? cityData[2] : 0
                 };
             });
             const option = {
@@ -826,94 +826,33 @@
                     textStyle: { color: '#00d9ff', fontSize: 18 }
                 },
                 tooltip: {
-                    trigger: 'item',
-                    formatter: params => {
-                        console.log('等值线图 tooltip params:', params);
-                        if (params.seriesType === 'scatter') {
-                            if (params.data && params.data.name && params.data.pm25) {
-                                return `<strong>${params.data.name}</strong><br/>PM2.5: ${params.data.pm25.toFixed(1)} μg/m³`;
-                            }
-                        } else if (params.seriesType === 'contour') {
-                            if (typeof params.value === 'number') {
-                                return `PM2.5: ${params.value.toFixed(1)} μg/m³`;
-                            } else if (params.data && params.data.value && Array.isArray(params.data.value) && params.data.value.length >= 3) {
-                                return `坐标: (${params.data.value[0].toFixed(1)}, ${params.data.value[1].toFixed(1)}) km<br/>PM2.5: ${params.data.value[2].toFixed(1)} μg/m³`;
-                            }
-                        }
-                        return '数据加载中...';
-                    }
-                },
-                legend: {
-                    data: ['等值线', '城市位置'],
-                    textStyle: { color: '#a0a0a0' },
-                    top: 50
+                    trigger: 'item'
                 },
                 xAxis: {
                     type: 'value',
                     name: 'X (km, 东西向)',
-                    nameLocation: 'middle',
-                    nameGap: 30,
-                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
-                    axisLine: { lineStyle: { color: '#00d9ff' } },
-                    axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
                     min: Math.min(...baseData.cities.map(c => c.x)) - 50,
                     max: Math.max(...baseData.cities.map(c => c.x)) + 50
                 },
                 yAxis: {
                     type: 'value',
                     name: 'Y (km, 南北向)',
-                    nameLocation: 'middle',
-                    nameGap: 40,
-                    nameTextStyle: { color: '#00d9ff', fontSize: 12 },
-                    axisLine: { lineStyle: { color: '#00d9ff' } },
-                    axisLabel: { color: '#a0a0a0' },
-                    splitLine: { lineStyle: { color: 'rgba(0,217,255,0.1)' } },
                     min: Math.min(...baseData.cities.map(c => c.y)) - 50,
                     max: Math.max(...baseData.cities.map(c => c.y)) + 50
                 },
                 visualMap: {
                     min: 0,
                     max: Math.max(100, maxPm25),
-                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
-                    textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
                     inRange: {
                         color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
-                    },
-                    right: 20,
-                    top: 'center',
-                    itemHeight: 200,
-                    itemWidth: 15
+                    }
                 },
                 series: [
                     {
                         name: '等值线',
                         type: 'contour',
-                        data: validData,
-                        smooth: true,
-                        lineStyle: {
-                            width: 2,
-                            type: 'solid',
-                            color: 'rgba(255, 255, 255, 0.8)'
-                        },
-                        label: {
-                            show: true,
-                            formatter: params => params.value.toFixed(0),
-                            color: '#fff',
-                            fontSize: 10
-                        },
-                        areaStyle: {
-                            opacity: 0.3
-                        },
-                        contours: {
-                            type: 'interval',
-                            interval: interval,
-                            label: {
-                                show: true,
-                                formatter: '{value}'
-                            }
-                        }
+                        data: validData
                     },
                     {
                         name: '城市位置',
@@ -924,24 +863,8 @@
                             show: true,
                             position: 'top',
                             formatter: '{b}',
-                            color: '#fff',
-                            fontSize: 10,
-                            backgroundColor: 'rgba(0,0,0,0.5)',
-                            padding: [2, 4],
-                            borderRadius: 3
-                        },
-                        itemStyle: {
-                            color: params => {
-                                const pm25 = params.data.pm25;
-                                if (pm25 >= 75) return '#ff0000';
-                                if (pm25 >= 50) return '#ff7e00';
-                                if (pm25 >= 35) return '#ffff00';
-                                return '#00e400';
-                            },
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        },
-                        zlevel: 2
+                            color: '#fff'
+                        }
                     }
                 ]
             };
