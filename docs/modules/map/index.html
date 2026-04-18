@@ -282,6 +282,15 @@
                 <div class="chart-title">PM2.5 空间趋势分析</div>
                 <div class="controls">
                     <div class="control-group">
+                        <span class="control-label">选择城市:</span>
+                        <select id="trend-city-select">
+                            <option value="all">综合所有城市</option>
+                            <option value="beijing">北京市</option>
+                            <option value="tianjin">天津市</option>
+                            <option value="hebei">河北省平均</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
                         <span class="control-label">分析维度:</span>
                         <select id="trend-dimension-select">
                             <option value="east-west">东西方向</option>
@@ -294,6 +303,15 @@
                         <select id="trend-type-select">
                             <option value="linear">线性趋势</option>
                             <option value="quadratic">二次曲线</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">移动平均线:</span>
+                        <select id="trend-ma-select">
+                            <option value="none">无</option>
+                            <option value="3">3年</option>
+                            <option value="5">5年</option>
+                            <option value="7">7年</option>
                         </select>
                     </div>
                 </div>
@@ -390,6 +408,8 @@
             spatialSelect.addEventListener('change', () => updateSpatialChart());
             document.getElementById('trend-dimension-select').addEventListener('change', () => updateTrendChart());
             document.getElementById('trend-type-select').addEventListener('change', () => updateTrendChart());
+            document.getElementById('trend-city-select').addEventListener('change', () => updateTrendChart());
+            document.getElementById('trend-ma-select').addEventListener('change', () => updateTrendChart());
         }
 
         function initCharts() {
@@ -978,6 +998,9 @@
         function updateTrendChart() {
             const dimension = document.getElementById('trend-dimension-select').value;
             const trendType = document.getElementById('trend-type-select').value;
+            const citySelect = document.getElementById('trend-city-select').value;
+            const maPeriod = parseInt(document.getElementById('trend-ma-select').value);
+            
             // 使用 year_range 生成年份数组，而不是依赖可能不存在的 years 属性
             const years = [];
             for (let year = baseData.year_range[0]; year <= baseData.year_range[1]; year++) {
@@ -986,14 +1009,37 @@
             const cities = baseData.cities;
             const cityPm25 = baseData.city_pm25;
             
+            // 过滤城市数据
+            let filteredCities = cities;
+            if (citySelect === 'beijing') {
+                filteredCities = cities.filter(city => city.city === '北京市');
+            } else if (citySelect === 'tianjin') {
+                filteredCities = cities.filter(city => city.city === '天津市');
+            } else if (citySelect === 'hebei') {
+                // 河北省城市：石家庄、秦皇岛、唐山、廊坊、沧州、衡水、保定、邢台、邯郸
+                const hebeiCities = ['石家庄市', '秦皇岛市', '唐山市', '廊坊市', '沧州市', '衡水市', '保定市', '邢台市', '邯郸市'];
+                filteredCities = cities.filter(city => hebeiCities.includes(city.city));
+            }
+            
             const eastWestData = [];
             const northSouthData = [];
-            cities.forEach(city => {
+            filteredCities.forEach(city => {
                 const data = cityPm25[city.city] || [];
                 const avgPm25 = data.reduce((sum, d) => sum + d.pm25, 0) / data.length || 0;
                 eastWestData.push([city.x, avgPm25, city.city]);
                 northSouthData.push([city.y, avgPm25, city.city]);
             });
+            
+            // 如果是河北省平均，计算平均值
+            if (citySelect === 'hebei' && filteredCities.length > 0) {
+                const avgX = eastWestData.reduce((sum, d) => sum + d[0], 0) / eastWestData.length;
+                const avgY = northSouthData.reduce((sum, d) => sum + d[0], 0) / northSouthData.length;
+                const avgPm25 = eastWestData.reduce((sum, d) => sum + d[1], 0) / eastWestData.length;
+                eastWestData.length = 0;
+                northSouthData.length = 0;
+                eastWestData.push([avgX, avgPm25, '河北省平均']);
+                northSouthData.push([avgY, avgPm25, '河北省平均']);
+            }
             
             eastWestData.sort((a, b) => a[0] - b[0]);
             northSouthData.sort((a, b) => a[0] - b[0]);
@@ -1046,6 +1092,22 @@
                             color: '#00d9ff',
                             width: 3,
                             type: 'dashed'
+                        },
+                        symbol: 'none'
+                    });
+                }
+                
+                // 添加移动平均线
+                if (maPeriod > 0 && eastWestData.length >= maPeriod) {
+                    const maData = calculateMovingAverage(eastWestData, maPeriod);
+                    series.push({
+                        name: `${maPeriod}年移动平均`,
+                        type: 'line',
+                        data: maData,
+                        lineStyle: {
+                            color: '#ff6b6b',
+                            width: 2,
+                            type: 'solid'
                         },
                         symbol: 'none'
                     });
@@ -1103,12 +1165,28 @@
                         symbol: 'none'
                     });
                 }
+                
+                // 添加移动平均线
+                if (maPeriod > 0 && northSouthData.length >= maPeriod) {
+                    const maData = calculateMovingAverage(northSouthData, maPeriod);
+                    series.push({
+                        name: `${maPeriod}年移动平均`,
+                        type: 'line',
+                        data: maData,
+                        lineStyle: {
+                            color: '#4ecdc4',
+                            width: 2,
+                            type: 'solid'
+                        },
+                        symbol: 'none'
+                    });
+                }
             }
             
             const option = {
                 backgroundColor: 'rgba(0,0,0,0.3)',
                 title: {
-                    text: 'PM2.5 空间趋势分析',
+                    text: `PM2.5 空间趋势分析 - ${getCityLabel(citySelect)}`,
                     left: 'center',
                     textStyle: { color: '#00d9ff', fontSize: 18 }
                 },
@@ -1149,6 +1227,29 @@
                 series: series
             };
             trendChart.setOption(option);
+        }
+        
+        function getCityLabel(citySelect) {
+            switch(citySelect) {
+                case 'all': return '综合所有城市';
+                case 'beijing': return '北京市';
+                case 'tianjin': return '天津市';
+                case 'hebei': return '河北省平均';
+                default: return '综合所有城市';
+            }
+        }
+        
+        function calculateMovingAverage(data, period) {
+            const result = [];
+            for (let i = period - 1; i < data.length; i++) {
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += data[i - j][1];
+                }
+                const avg = sum / period;
+                result.push([data[i][0], avg]);
+            }
+            return result;
         }
 
         function calculateLinearTrend(xValues, yValues) {

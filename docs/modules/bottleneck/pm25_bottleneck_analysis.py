@@ -243,18 +243,6 @@ def calculate_quantile_regression(pm25_df):
     
     return quantile_results
 
-def calculate_moving_average(values, window):
-    if window <= 1:
-        return values
-    n = len(values)
-    ma = []
-    for i in range(n):
-        start = max(0, i - window // 2)
-        end = min(n, i + window // 2 + 1)
-        window_values = values[start:end]
-        ma.append(np.mean(window_values))
-    return ma
-
 def calculate_annual_decline_rate(pm25_df):
     yearly_avg = pm25_df.groupby('year')['pm25'].mean().reset_index()
     yearly_avg.columns = ['year', 'avg_pm25']
@@ -262,11 +250,6 @@ def calculate_annual_decline_rate(pm25_df):
 
     yearly_avg['decline_rate'] = yearly_avg['avg_pm25'].diff() * -1
     yearly_avg['decline_rate_pct'] = (yearly_avg['decline_rate'] / yearly_avg['avg_pm25'].shift(1)) * 100
-    
-    # 计算移动平均线
-    values = yearly_avg['avg_pm25'].values
-    yearly_avg['ma3'] = calculate_moving_average(values, 3)
-    yearly_avg['ma5'] = calculate_moving_average(values, 5)
 
     cities = pm25_df['city'].unique()
     city_yearly = {}
@@ -274,12 +257,6 @@ def calculate_annual_decline_rate(pm25_df):
         city_data = pm25_df[pm25_df['city'] == city][['year', 'pm25']].sort_values('year')
         city_data['decline_rate'] = city_data['pm25'].diff() * -1
         city_data['decline_rate_pct'] = (city_data['decline_rate'] / city_data['pm25'].shift(1)) * 100
-        
-        # 为每个城市计算移动平均线
-        city_values = city_data['pm25'].values
-        city_data['ma3'] = calculate_moving_average(city_values, 3)
-        city_data['ma5'] = calculate_moving_average(city_values, 5)
-        
         city_yearly[city] = city_data.to_dict('records')
 
     return yearly_avg.to_dict('records'), city_yearly
@@ -315,42 +292,6 @@ def detect_breakpoint(yearly_avg):
         'p_value': float(p_value),
         'significant': bool(p_value < 0.05)
     }
-
-def detect_city_breakpoints(city_yearly):
-    city_breakpoints = {}
-    for city, data in city_yearly.items():
-        if len(data) >= 6:
-            data_copy = pd.DataFrame(data)
-            if 'pm25' in data_copy.columns and 'avg_pm25' not in data_copy.columns:
-                data_copy = data_copy.rename(columns={'pm25': 'avg_pm25'})
-            city_breakpoints[city] = detect_breakpoint(data_copy)
-        else:
-            city_breakpoints[city] = {'breakpoint': None, 'before_rate': None, 'after_rate': None, 'p_value': None, 'significant': False}
-    return city_breakpoints
-
-def calculate_city_kalman_filter(city_yearly):
-    city_kalman = {}
-    for city, data in city_yearly.items():
-        if len(data) >= 6:
-            data_copy = pd.DataFrame(data)
-            if 'pm25' in data_copy.columns and 'avg_pm25' not in data_copy.columns:
-                data_copy = data_copy.rename(columns={'pm25': 'avg_pm25'})
-            city_kalman[city] = kalman_filter_decomposition(data_copy)
-        else:
-            city_kalman[city] = {'original': [], 'trend': [], 'smoothed': [], 'upper_bound': [], 'lower_bound': []}
-    return city_kalman
-
-def calculate_city_hp_filter(city_yearly):
-    city_hp = {}
-    for city, data in city_yearly.items():
-        if len(data) >= 6:
-            data_copy = pd.DataFrame(data)
-            if 'pm25' in data_copy.columns and 'avg_pm25' not in data_copy.columns:
-                data_copy = data_copy.rename(columns={'pm25': 'avg_pm25'})
-            city_hp[city] = hp_filter_decomposition(data_copy)
-        else:
-            city_hp[city] = {'original': [], 'trend': [], 'cycle': [], 'moving_avg': []}
-    return city_hp
 
 def hp_filter_decomposition(yearly_avg, lambda_val=1600):
     data = pd.DataFrame(yearly_avg)
@@ -735,24 +676,12 @@ def main():
             return [convert_nan_to_null(item) for item in obj]
         return obj
 
-    # 为每个城市计算断点
-    city_breakpoints = detect_city_breakpoints(city_yearly)
-    
-    # 为每个城市计算卡尔曼滤波
-    city_kalman = calculate_city_kalman_filter(city_yearly)
-    
-    # 为每个城市计算HP滤波
-    city_hp_filter = calculate_city_hp_filter(city_yearly)
-    
     trend_data = {
         'yearly_average': yearly_avg,
         'city_yearly': city_yearly,
         'breakpoint': breakpoint_result,
-        'city_breakpoints': city_breakpoints,
         'hp_filter': hp_result,
         'kalman_filter': kalman_result,
-        'city_kalman': city_kalman,
-        'city_hp_filter': city_hp_filter,
         'mann_kendall': mk_result,
         'pettitt': pettitt_result,
         'acceleration_index': acceleration_idx,
