@@ -114,9 +114,21 @@
             <div class="bg-white rounded-lg shadow p-4 mb-6">
                 <div class="flex flex-wrap items-center gap-4">
                     <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-700">城市筛选:</label>
+                        <label class="text-sm font-medium text-gray-700">城市/区域筛选:</label>
                         <select id="city-filter" class="border rounded px-3 py-1 text-sm" onchange="filterCityData()">
-                            <option value="all">全部城市</option>
+                            <option value="all">全部城市(京津冀)</option>
+                            <option value="beijing_tianjin">北京天津</option>
+                            <option value="beijing">北京</option>
+                            <option value="tianjin">天津</option>
+                            <option value="hebei">河北</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">移动平均:</label>
+                        <select id="ma-window" class="border rounded px-3 py-1 text-sm" onchange="filterCityData()">
+                            <option value="1">无</option>
+                            <option value="3">3年移动平均</option>
+                            <option value="5">5年移动平均</option>
                         </select>
                     </div>
                     <div class="flex items-center gap-2">
@@ -671,7 +683,7 @@
             `;
         }
 
-        function renderTrendCharts(trendData) {
+        function renderTrendCharts(trendData, maWindow = 1) {
             const yearlyAvg = trendData.yearly_average || [];
             const breakpoint = trendData.breakpoint || {};
             const hpFilter = trendData.hp_filter || {};
@@ -683,29 +695,51 @@
 
             const years = yearlyAvg.map(d => d.year);
             const pm25Values = yearlyAvg.map(d => d.avg_pm25);
+            const maValues = calculateMovingAverage(pm25Values, maWindow);
+
+            // 更新图表前先销毁旧图表
+            if (charts.trendChart) {
+                charts.trendChart.destroy();
+            }
+
+            const datasets = [{
+                label: 'PM2.5年均浓度',
+                data: pm25Values,
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }, {
+                label: 'HP滤波趋势',
+                data: hpFilter.trend || pm25Values,
+                borderColor: '#10B981',
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0
+            }];
+
+            // 如果选择了移动平均，添加移动平均线
+            if (maWindow > 1) {
+                datasets.push({
+                    label: `${maWindow}年移动平均`,
+                    data: maValues,
+                    borderColor: '#F59E0B',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                });
+            }
 
             charts.trendChart = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
                 data: {
                     labels: years,
-                    datasets: [{
-                        label: 'PM2.5年均浓度',
-                        data: pm25Values,
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }, {
-                        label: 'HP滤波趋势',
-                        data: hpFilter.trend || pm25Values,
-                        borderColor: '#10B981',
-                        borderDash: [5, 5],
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 0
-                    }]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -1399,15 +1433,65 @@
         function filterCityData() {
             const selectedCity = document.getElementById('city-filter').value;
             const period = document.getElementById('period-compare').value;
+            const maWindow = parseInt(document.getElementById('ma-window').value);
 
-            if (selectedCity === 'all') {
-                renderTrendCharts(window.globalTrendData);
-                renderCityTrendChart(window.globalTrendData);
+            if (selectedCity === 'all' || selectedCity === 'beijing_tianjin' || selectedCity === 'hebei') {
+                const filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, period);
+                renderTrendCharts(filteredData, maWindow);
             } else {
                 const filteredData = filterTrendDataByCity(window.globalTrendData, selectedCity, period);
-                renderTrendCharts(filteredData);
-                renderSingleCityChart(filteredData, selectedCity);
+                renderTrendCharts(filteredData, maWindow);
             }
+        }
+
+        function filterTrendDataByRegion(trendData, region, period) {
+            const filtered = JSON.parse(JSON.stringify(trendData));
+            
+            // 区域城市定义
+            const regionCities = {
+                'beijing_tianjin': ['北京', '天津'],
+                'beijing': ['北京'],
+                'tianjin': ['天津'],
+                'hebei': ['唐山', '石家庄', '秦皇岛', '邯郸', '邢台', '保定', '张家口', '承德', '沧州', '廊坊', '衡水']
+            };
+            
+            if (region !== 'all' && filtered.city_data) {
+                const citiesInRegion = regionCities[region] || [];
+                const regionYearly = {};
+                
+                // 初始化每年的数据累加器
+                years.forEach(year => {
+                    regionYearly[year] = { sum: 0, count: 0 };
+                });
+                
+                // 累加区域内所有城市的数据
+                citiesInRegion.forEach(city => {
+                    if (filtered.city_data[city]) {
+                        const cityYearly = filtered.city_data[city].yearly || [];
+                        cityYearly.forEach(d => {
+                            if (regionYearly[d.year]) {
+                                regionYearly[d.year].sum += d.pm25;
+                                regionYearly[d.year].count++;
+                            }
+                        });
+                    }
+                });
+                
+                // 计算平均值
+                filtered.yearly_average = years.map(year => ({
+                    year: year,
+                    avg_pm25: regionYearly[year].count > 0 ? regionYearly[year].sum / regionYearly[year].count : 0
+                }));
+            }
+
+            if (period !== 'all') {
+                const bp = 2020;
+                filtered.yearly_average = filtered.yearly_average.filter(d =>
+                    period === 'before' ? d.year < bp : d.year >= bp
+                );
+            }
+
+            return filtered;
         }
 
         function filterTrendDataByCity(trendData, city, period) {
@@ -1430,6 +1514,19 @@
             }
 
             return filtered;
+        }
+
+        function calculateMovingAverage(data, window) {
+            if (window <= 1) return data;
+            const result = [];
+            for (let i = 0; i < data.length; i++) {
+                const start = Math.max(0, i - Math.floor(window / 2));
+                const end = Math.min(data.length, i + Math.ceil(window / 2));
+                const slice = data.slice(start, end);
+                const avg = slice.reduce((sum, val) => sum + val, 0) / slice.length;
+                result.push(avg);
+            }
+            return result;
         }
 
         function renderSingleCityChart(data, city) {
