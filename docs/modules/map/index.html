@@ -823,17 +823,19 @@
             
             const year = parseInt(document.getElementById('spatial-year-select').value);
             const cities = baseData.cities;
+            const cityPm25 = baseData.city_pm25;
             
             const data = cities.map(city => {
-                const yearData = city.pm25.find(d => d.year === year);
-                const value = yearData ? yearData.value : 0;
+                const cityData = cityPm25[city.city] || [];
+                const yearData = cityData.find(d => d.year === year);
+                const value = yearData ? yearData.pm25 : 0;
                 
                 // 模拟局部莫兰指数结果
-                const moranType = getMoranType(city, cities, year);
+                const moranType = getMoranType(city, cities, year, cityPm25);
                 
                 return {
-                    name: city.name,
-                    value: [city.coordinates[0], city.coordinates[1], value],
+                    name: city.city,
+                    value: [city.x, city.y, value],
                     itemStyle: {
                         color: getMoranColor(moranType)
                     },
@@ -841,7 +843,7 @@
                     label: {
                         show: true,
                         position: 'top',
-                        formatter: city.name,
+                        formatter: city.city,
                         fontSize: 10
                     },
                     emphasis: {
@@ -902,25 +904,27 @@
             spatialChart.setOption(option);
         }
 
-        function getMoranType(city, allCities, year) {
+        function getMoranType(city, allCities, year, cityPm25) {
             // 简单模拟局部莫兰指数结果
-            const cityData = city.pm25.find(d => d.year === year);
-            const cityValue = cityData ? cityData.value : 0;
+            const cityData = cityPm25[city.city] || [];
+            const yearData = cityData.find(d => d.year === year);
+            const cityValue = yearData ? yearData.pm25 : 0;
             
             // 计算邻居平均值
             let neighborSum = 0;
             let neighborCount = 0;
             
             allCities.forEach(neighbor => {
-                if (neighbor.name !== city.name) {
+                if (neighbor.city !== city.city) {
                     const dist = Math.sqrt(
-                        Math.pow(city.coordinates[0] - neighbor.coordinates[0], 2) +
-                        Math.pow(city.coordinates[1] - neighbor.coordinates[1], 2)
+                        Math.pow(city.x - neighbor.x, 2) +
+                        Math.pow(city.y - neighbor.y, 2)
                     );
-                    if (dist < 100000) { // 100km范围内作为邻居
-                        const neighborData = neighbor.pm25.find(d => d.year === year);
-                        if (neighborData) {
-                            neighborSum += neighborData.value;
+                    if (dist < 100) { // 100km范围内作为邻居
+                        const neighborData = cityPm25[neighbor.city] || [];
+                        const neighborYearData = neighborData.find(d => d.year === year);
+                        if (neighborYearData) {
+                            neighborSum += neighborYearData.pm25;
                             neighborCount++;
                         }
                     }
@@ -928,10 +932,19 @@
             });
             
             const neighborAvg = neighborCount > 0 ? neighborSum / neighborCount : 0;
-            const globalAvg = allCities.reduce((sum, c) => {
-                const d = c.pm25.find(d => d.year === year);
-                return sum + (d ? d.value : 0);
-            }, 0) / allCities.length;
+            
+            // 计算全局平均值
+            let globalSum = 0;
+            let globalCount = 0;
+            allCities.forEach(c => {
+                const cData = cityPm25[c.city] || [];
+                const cYearData = cData.find(d => d.year === year);
+                if (cYearData) {
+                    globalSum += cYearData.pm25;
+                    globalCount++;
+                }
+            });
+            const globalAvg = globalCount > 0 ? globalSum / globalCount : 0;
             
             if (cityValue > globalAvg && neighborAvg > globalAvg) {
                 return 'high-high'; // 高值集聚
@@ -965,7 +978,11 @@
         function updateTrendChart() {
             const dimension = document.getElementById('trend-dimension-select').value;
             const trendType = document.getElementById('trend-type-select').value;
-            const years = baseData.years;
+            // 使用 year_range 生成年份数组，而不是依赖可能不存在的 years 属性
+            const years = [];
+            for (let year = baseData.year_range[0]; year <= baseData.year_range[1]; year++) {
+                years.push(year);
+            }
             const cities = baseData.cities;
             const cityPm25 = baseData.city_pm25;
             
