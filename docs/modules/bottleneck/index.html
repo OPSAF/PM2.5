@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; }
+        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; background: #f5f5f5; }
         .pixel-font { font-family: 'Press Start 2P', cursive; font-size: 10px; }
         .tab-btn.active { border-bottom: 3px solid #3B82F6; color: #3B82F6; }
         .chart-container { position: relative; height: 400px; }
@@ -28,6 +28,34 @@
         .tab-content.active { display: block; }
         .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .hero-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            .nav-tabs::-webkit-scrollbar {
+                height: 4px;
+            }
+            .nav-tabs::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+            .nav-tabs::-webkit-scrollbar-thumb {
+                background: #888;
+                border-radius: 4px;
+            }
+            .nav-tabs::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+            .flex-between {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .flex-between > * {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -39,25 +67,25 @@
     <div id="content" class="hidden">
         <header class="hero-gradient text-white shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 py-3">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center space-x-4">
-                        <a href="../../index.html" class="flex items-center space-x-2 px-4 py-2 glass-effect rounded-lg hover:bg-white/10 transition">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <div class="flex items-center space-x-3 flex-wrap gap-2">
+                        <a href="../../index.html" class="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition text-white border border-white/20">
                             <i class="fas fa-home"></i>
                             <span class="text-sm font-medium">返回首页</span>
                         </a>
-                        <div>
+                        <div class="flex-1 min-w-[200px]">
                             <h1 class="text-xl font-bold">PM2.5 下降瓶颈分析</h1>
-                            <p class="text-xs text-gray-400">京津冀地区PM2.5浓度趋势与空间格局分析</p>
+                            <p class="text-xs text-gray-300">京津冀地区PM2.5浓度趋势与空间格局分析</p>
                         </div>
                     </div>
-                    <a href="../map/index.html" class="px-5 py-2 glass-effect rounded-lg hover:bg-white/10 transition flex items-center gap-2">
+                    <a href="../map/index.html" class="px-5 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center gap-2 text-white border border-white/20">
                         <i class="fas fa-map-marked-alt"></i>
                         <span class="text-sm font-medium">空间可视化</span>
                     </a>
                 </div>
             </div>
             <div class="border-t border-white/10">
-                <nav class="flex space-x-1 px-4 max-w-7xl mx-auto">
+                <nav class="flex space-x-1 px-4 max-w-7xl mx-auto nav-tabs">
                     <button class="tab-btn active px-4 py-3 text-sm font-medium" data-tab="trend">
                         <i class="fas fa-line-chart mr-1"></i>趋势分析
                     </button>
