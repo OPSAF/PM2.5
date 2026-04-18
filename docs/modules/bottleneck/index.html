@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
@@ -111,50 +112,46 @@
         <main class="max-w-7xl mx-auto px-4 py-6">
             <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
 
-            <div class="bg-white rounded-lg shadow p-4 mb-6">
-                <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-700">城市/区域筛选:</label>
-                        <select id="city-filter" class="border rounded px-3 py-1 text-sm" onchange="filterCityData()">
-                            <option value="all">全部城市(京津冀)</option>
-                            <option value="beijing_tianjin">北京天津</option>
-                            <option value="beijing">北京</option>
-                            <option value="tianjin">天津</option>
-                            <option value="hebei">河北</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-700">移动平均:</label>
-                        <select id="ma-window" class="border rounded px-3 py-1 text-sm" onchange="filterCityData()">
-                            <option value="1">无</option>
-                            <option value="3">3年移动平均</option>
-                            <option value="5">5年移动平均</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-700">时段对比:</label>
-                        <select id="period-compare" class="border rounded px-3 py-1 text-sm">
-                            <option value="all">全时期</option>
-                            <option value="before">断点前 (2014-2019)</option>
-                            <option value="after">断点后 (2020-2024)</option>
-                        </select>
-                    </div>
-                    <button onclick="exportAnalysisData()" class="ml-auto bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded text-sm flex items-center gap-2">
-                        <i class="fas fa-download"></i>导出分析结果
-                    </button>
-                    <button onclick="showCorrelationMatrix()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-1 rounded text-sm flex items-center gap-2">
-                        <i class="fas fa-th"></i>相关性矩阵
-                    </button>
-                </div>
-            </div>
+
 
             <div id="tab-trend" class="tab-content active">
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">PM2.5 年度趋势与断点分析</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('trendChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700">数据选择:</label>
+                                <select id="data-select" class="border rounded px-3 py-1 text-sm" onchange="updateTrendChart()">
+                                    <option value="all">综合</option>
+                                    <option value="beijing_tianjin">京津综合</option>
+                                    <option value="hebei">河北综合</option>
+                                    <option value="beijing">北京</option>
+                                    <option value="tianjin">天津</option>
+                                    <option value="tangshan">唐山</option>
+                                    <option value="shijiazhuang">石家庄</option>
+                                    <option value="qinhuangdao">秦皇岛</option>
+                                    <option value="handan">邯郸</option>
+                                    <option value="xingtai">邢台</option>
+                                    <option value="baoding">保定</option>
+                                    <option value="zhangjiakou">张家口</option>
+                                    <option value="chengde">承德</option>
+                                    <option value="cangzhou">沧州</option>
+                                    <option value="langfang">廊坊</option>
+                                    <option value="hengshui">衡水</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700">移动平均:</label>
+                                <select id="ma-window" class="border rounded px-3 py-1 text-sm" onchange="updateTrendChart()">
+                                    <option value="1">无</option>
+                                    <option value="3">3年移动平均</option>
+                                    <option value="5">5年移动平均</option>
+                                </select>
+                            </div>
+                            <button class="expand-btn text-gray-500" onclick="expandChart('trendChart')">
+                                <i class="fas fa-expand-alt text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="chart-container" id="trendChartContainer">
                         <canvas id="trendChart"></canvas>
@@ -182,9 +179,32 @@
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">HP滤波分解</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('hpFilterChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700">城市/区域:</label>
+                                <select id="hp-filter-city-select" class="border rounded px-3 py-1 text-sm" onchange="updateHPFilterChart()">
+                                    <option value="all">综合</option>
+                                    <option value="beijing_tianjin">京津综合</option>
+                                    <option value="hebei">河北综合</option>
+                                    <option value="beijing">北京</option>
+                                    <option value="tianjin">天津</option>
+                                    <option value="tangshan">唐山</option>
+                                    <option value="shijiazhuang">石家庄</option>
+                                    <option value="baoding">保定</option>
+                                    <option value="zhangjiakou">张家口</option>
+                                    <option value="chengde">承德</option>
+                                    <option value="cangzhou">沧州</option>
+                                    <option value="langfang">廊坊</option>
+                                    <option value="hengshui">衡水</option>
+                                    <option value="qinhuangdao">秦皇岛</option>
+                                    <option value="handan">邯郸</option>
+                                    <option value="xingtai">邢台</option>
+                                </select>
+                            </div>
+                            <button class="expand-btn text-gray-500" onclick="expandChart('hpFilterChart')">
+                                <i class="fas fa-expand-alt text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="chart-container" id="hpFilterChartContainer">
                         <canvas id="hpFilterChart"></canvas>
@@ -194,9 +214,32 @@
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">卡尔曼滤波分解</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('kalmanFilterChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700">城市/区域:</label>
+                                <select id="kalman-filter-city-select" class="border rounded px-3 py-1 text-sm" onchange="updateKalmanFilterChart()">
+                                    <option value="all">综合</option>
+                                    <option value="beijing_tianjin">京津综合</option>
+                                    <option value="hebei">河北综合</option>
+                                    <option value="beijing">北京</option>
+                                    <option value="tianjin">天津</option>
+                                    <option value="tangshan">唐山</option>
+                                    <option value="shijiazhuang">石家庄</option>
+                                    <option value="baoding">保定</option>
+                                    <option value="zhangjiakou">张家口</option>
+                                    <option value="chengde">承德</option>
+                                    <option value="cangzhou">沧州</option>
+                                    <option value="langfang">廊坊</option>
+                                    <option value="hengshui">衡水</option>
+                                    <option value="qinhuangdao">秦皇岛</option>
+                                    <option value="handan">邯郸</option>
+                                    <option value="xingtai">邢台</option>
+                                </select>
+                            </div>
+                            <button class="expand-btn text-gray-500" onclick="expandChart('kalmanFilterChart')">
+                                <i class="fas fa-expand-alt text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="chart-container" id="kalmanFilterChartContainer">
                         <canvas id="kalmanFilterChart"></canvas>
@@ -220,9 +263,39 @@
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">年度下降速率变化</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('declineRateChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700">显示模式:</label>
+                                <select id="decline-rate-mode-select" class="border rounded px-3 py-1 text-sm" onchange="updateDeclineRateChart()">
+                                    <option value="single">单个城市/区域</option>
+                                    <option value="compare">京津/河北分组对比</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2" id="single-city-select">
+                                <label class="text-sm font-medium text-gray-700">数据选择:</label>
+                                <select id="decline-rate-city-select" class="border rounded px-3 py-1 text-sm" onchange="updateDeclineRateChart()">
+                                    <option value="all">综合</option>
+                                    <option value="beijing_tianjin">京津综合</option>
+                                    <option value="hebei">河北综合</option>
+                                    <option value="beijing">北京</option>
+                                    <option value="tianjin">天津</option>
+                                    <option value="tangshan">唐山</option>
+                                    <option value="shijiazhuang">石家庄</option>
+                                    <option value="baoding">保定</option>
+                                    <option value="zhangjiakou">张家口</option>
+                                    <option value="chengde">承德</option>
+                                    <option value="cangzhou">沧州</option>
+                                    <option value="langfang">廊坊</option>
+                                    <option value="hengshui">衡水</option>
+                                    <option value="qinhuangdao">秦皇岛</option>
+                                    <option value="handan">邯郸</option>
+                                    <option value="xingtai">邢台</option>
+                                </select>
+                            </div>
+                            <button class="expand-btn text-gray-500" onclick="expandChart('declineRateChart')">
+                                <i class="fas fa-expand-alt text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="chart-container" id="declineRateChartContainer">
                         <canvas id="declineRateChart"></canvas>
@@ -546,14 +619,22 @@
             '北京': '#E74C3C', '天津': '#3498DB', '保定': '#9B59B6', '唐山': '#F39C12',
             '廊坊': '#1ABC9C', '张家口': '#E67E22', '承德': '#2ECC71', '沧州': '#34495E',
             '石家庄': '#C0392B', '秦皇岛': '#16A085', '衡水': '#8E44AD', '邢台': '#D35400',
-            '邯郸': '#27AE60'
+            '邯郸': '#27AE60', '综合': '#95A5A6', '京津综合': '#3498DB', '河北综合': '#27AE60'
         };
 
         let charts = {};
 
         async function loadJSON(url) {
             try {
-                const response = await fetch(url);
+                // 尝试直接加载
+                let response = await fetch(url);
+                if (response.ok) {
+                    return await response.json();
+                }
+                
+                // 如果失败，尝试使用完整路径
+                const fullUrl = `https://opsaf.github.io/PM2.5/modules/bottleneck/${url}`;
+                response = await fetch(fullUrl);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return await response.json();
             } catch (error) {
@@ -634,6 +715,10 @@
                 initCityFilter(trendData);
                 renderSummaryStats(summaryData);
                 renderTrendCharts(trendData);
+                renderHPFilterChart(trendData, '综合');
+                renderKalmanFilterChart(trendData, '综合');
+                renderDeclineRateChart('all');
+                renderCityTrendChart(trendData);
                 renderSpatialCharts(spatialData);
                 renderHeterogeneityCharts(heterogeneityData);
                 renderAdvancedCharts(trendData, spatialData);
@@ -695,14 +780,15 @@
 
             const years = yearlyAvg.map(d => d.year);
             const pm25Values = yearlyAvg.map(d => d.avg_pm25);
-            const maValues = calculateMovingAverage(pm25Values, maWindow);
 
-            // 更新图表前先销毁旧图表
+            const ma3Values = yearlyAvg.map(d => d.ma3);
+            const ma5Values = yearlyAvg.map(d => d.ma5);
+
             if (charts.trendChart) {
                 charts.trendChart.destroy();
             }
 
-            const datasets = [{
+            const datasetsArray = [{
                 label: 'PM2.5年均浓度',
                 data: pm25Values,
                 borderColor: '#3B82F6',
@@ -721,32 +807,59 @@
                 pointRadius: 0
             }];
 
-            // 如果选择了移动平均，添加移动平均线
             if (maWindow > 1) {
-                datasets.push({
-                    label: `${maWindow}年移动平均`,
-                    data: maValues,
-                    borderColor: '#F59E0B',
-                    borderWidth: 3,
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 6
-                });
+                let maData;
+                if (maWindow === 3) {
+                    maData = ma3Values;
+                } else if (maWindow === 5) {
+                    maData = ma5Values;
+                } else {
+                    maData = calculateMovingAverage(pm25Values, maWindow);
+                }
+                if (maData && maData.length > 0) {
+                    datasetsArray.push({
+                        label: `${maWindow}年移动平均`,
+                        data: maData,
+                        borderColor: '#F59E0B',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
+                    });
+                }
             }
 
             charts.trendChart = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
                 data: {
                     labels: years,
-                    datasets: datasets
+                    datasets: datasetsArray
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         title: { display: false },
-                        legend: { position: 'top' }
+                        legend: { position: 'top' },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x'
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x'
+                            },
+                            controls: {
+                                position: 'top-right'
+                            }
+                        }
                     },
                     scales: {
                         y: { 
@@ -757,6 +870,9 @@
                 }
             });
 
+            if (charts.hpFilterChart) {
+                charts.hpFilterChart.destroy();
+            }
             charts.hpFilterChart = new Chart(document.getElementById('hpFilterChart'), {
                 type: 'line',
                 data: {
@@ -787,7 +903,25 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title: { display: false },
-                        legend: { position: 'top' }
+                        legend: { position: 'top' },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x'
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x'
+                            },
+                            controls: {
+                                position: 'top-right'
+                            }
+                        }
                     },
                     scales: {
                         y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
@@ -803,6 +937,9 @@
                     (1 - Math.abs(kalmanFilter.original.reduce((s, v, i) => s + Math.abs(v - kalmanFilter.smoothed[i]), 0) / kalmanFilter.original.reduce((s, v) => s + v, 0) * 100)).toFixed(1) + '%' : '-';
                 document.getElementById('kalman-smoothness').textContent = smoothness;
 
+                if (charts.kalmanFilterChart) {
+                    charts.kalmanFilterChart.destroy();
+                }
                 charts.kalmanFilterChart = new Chart(document.getElementById('kalmanFilterChart'), {
                     type: 'line',
                     data: {
@@ -851,7 +988,22 @@
                         maintainAspectRatio: false,
                         plugins: {
                             title: { display: false },
-                            legend: { position: 'top' }
+                            legend: { position: 'top' },
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x'
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'x'
+                                }
+                            }
                         },
                         scales: {
                             y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
@@ -876,7 +1028,22 @@
                         maintainAspectRatio: false,
                         plugins: {
                             title: { display: false },
-                            legend: { display: true }
+                            legend: { display: true },
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x'
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'x'
+                                }
+                            }
                         },
                         scales: {
                             y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
@@ -885,33 +1052,9 @@
                 });
             }
 
-            const declineRates = yearlyAvg.map(d => d.decline_rate_pct);
-            charts.declineRateChart = new Chart(document.getElementById('declineRateChart'), {
-                type: 'bar',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '年下降速率 (%)',
-                        data: declineRates,
-                        backgroundColor: declineRates.map(v => v >= 0 ? '#10B981' : '#EF4444')
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: '下降速率 (%)' } }
-                    }
-                }
-            });
-
             const cityYearly = trendData.city_yearly || {};
-            const cities = Object.keys(cityYearly).slice(0, 8);
-            const datasets = cities.map(city => ({
+            const cities = Object.keys(cityYearly);
+            const cityDatasets = cities.map(city => ({
                 label: city,
                 data: cityYearly[city]?.map(d => d.pm25) || [],
                 borderColor: cityColors[city] || '#' + Math.floor(Math.random()*16777215).toString(16),
@@ -919,18 +1062,26 @@
                 tension: 0.4
             }));
 
+            if (charts.cityTrendChart) {
+                charts.cityTrendChart.destroy();
+            }
             charts.cityTrendChart = new Chart(document.getElementById('cityTrendChart'), {
                 type: 'line',
                 data: {
                     labels: years,
-                    datasets: datasets
+                    datasets: cityDatasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         title: { display: false },
-                        legend: { position: 'right' }
+                        legend: { position: 'right' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+                            controls: { position: 'top-right' }
+                        }
                     },
                     scales: {
                         y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
@@ -1420,29 +1571,19 @@
         }
 
         function initCityFilter(trendData) {
-            const cityFilter = document.getElementById('city-filter');
-            const cities = Object.keys(cityColors);
-            cities.forEach(city => {
-                const option = document.createElement('option');
-                option.value = city;
-                option.textContent = city;
-                cityFilter.appendChild(option);
-            });
-        }
-
-        function filterCityData() {
-            const selectedCity = document.getElementById('city-filter').value;
-            const period = document.getElementById('period-compare').value;
-            const maWindow = parseInt(document.getElementById('ma-window').value);
-
-            if (selectedCity === 'all' || selectedCity === 'beijing_tianjin' || selectedCity === 'hebei') {
-                const filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, period);
-                renderTrendCharts(filteredData, maWindow);
-            } else {
-                const filteredData = filterTrendDataByCity(window.globalTrendData, selectedCity, period);
-                renderTrendCharts(filteredData, maWindow);
+            const cityFilter = document.getElementById('data-select');
+            if (cityFilter) {
+                const cities = Object.keys(cityColors);
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    cityFilter.appendChild(option);
+                });
             }
         }
+
+
 
         function filterTrendDataByRegion(trendData, region, period) {
             const filtered = JSON.parse(JSON.stringify(trendData));
@@ -1455,7 +1596,10 @@
                 'hebei': ['唐山', '石家庄', '秦皇岛', '邯郸', '邢台', '保定', '张家口', '承德', '沧州', '廊坊', '衡水']
             };
             
-            if (region !== 'all' && filtered.city_data) {
+            // 从原始数据中提取年份
+            const years = trendData.yearly_average ? trendData.yearly_average.map(d => d.year) : [];
+            
+            if (region !== 'all' && filtered.city_yearly) {
                 const citiesInRegion = regionCities[region] || [];
                 const regionYearly = {};
                 
@@ -1466,8 +1610,8 @@
                 
                 // 累加区域内所有城市的数据
                 citiesInRegion.forEach(city => {
-                    if (filtered.city_data[city]) {
-                        const cityYearly = filtered.city_data[city].yearly || [];
+                    if (filtered.city_yearly[city]) {
+                        const cityYearly = filtered.city_yearly[city] || [];
                         cityYearly.forEach(d => {
                             if (regionYearly[d.year]) {
                                 regionYearly[d.year].sum += d.pm25;
@@ -1482,6 +1626,31 @@
                     year: year,
                     avg_pm25: regionYearly[year].count > 0 ? regionYearly[year].sum / regionYearly[year].count : 0
                 }));
+
+                // 计算区域的下降速率
+                for (let i = 1; i < filtered.yearly_average.length; i++) {
+                    const prev = filtered.yearly_average[i-1].avg_pm25;
+                    const curr = filtered.yearly_average[i].avg_pm25;
+                    filtered.yearly_average[i].decline_rate = (prev - curr);
+                    filtered.yearly_average[i].decline_rate_pct = prev > 0 ? ((prev - curr) / prev) * 100 : 0;
+                }
+
+                // 计算区域的移动平均线
+                const pm25Values = filtered.yearly_average.map(d => d.avg_pm25);
+                const ma3 = calculateMovingAverage(pm25Values, 3);
+                const ma5 = calculateMovingAverage(pm25Values, 5);
+                filtered.yearly_average.forEach((d, i) => {
+                    d.ma3 = ma3[i];
+                    d.ma5 = ma5[i];
+                });
+
+                // 计算区域的HP滤波
+                const regionHP = hpFilterDecompositionForRegion(filtered.yearly_average);
+                filtered.hp_filter = regionHP;
+
+                // 计算区域的卡尔曼滤波
+                const regionKalman = kalmanFilterDecompositionForRegion(filtered.yearly_average);
+                filtered.kalman_filter = regionKalman;
             }
 
             if (period !== 'all') {
@@ -1494,16 +1663,234 @@
             return filtered;
         }
 
+        function hpFilterDecompositionForRegion(yearlyData) {
+            const y = yearlyData.map(d => d.avg_pm25);
+            const n = y.length;
+
+            if (n < 2) {
+                return {
+                    original: y,
+                    trend: y,
+                    cycle: y.map(() => 0),
+                    moving_avg: y
+                };
+            }
+
+            const lambda_val = 1600;
+            const diag_main = Array(n).fill(4 * lambda_val);
+            const diag_off = Array(n - 1).fill(-lambda_val);
+            const diag_off2 = Array(n - 2).fill(lambda_val);
+
+            let trend;
+            try {
+                const D1 = Array(n-1).fill().map((_, i) => {
+                    const row = Array(n).fill(0);
+                    row[i] = -1;
+                    row[i+1] = 1;
+                    return row;
+                });
+
+                const D2 = Array(n-2).fill().map((_, i) => {
+                    const row = Array(n).fill(0);
+                    row[i] = 1;
+                    row[i+1] = -2;
+                    row[i+2] = 1;
+                    return row;
+                });
+
+                const D = D1.concat(D2);
+                const Dt = D[0].map((_, colIndex) => D.map(row => row[colIndex]));
+                const DtD = matrixMultiply(Dt, D);
+
+                const I = Array(n).fill().map((_, i) => {
+                    const row = Array(n).fill(0);
+                    row[i] = 1;
+                    return row;
+                });
+
+                const A = matrixAdd(I, matrixMultiply(matrixScalarMultiply(DtD, 2 * lambda_val), 1));
+                trend = matrixSolve(A, y);
+            } catch (e) {
+                trend = calculateMovingAverage(y, 3);
+            }
+
+            const cycle = y.map((val, i) => val - trend[i]);
+            const moving_avg = calculateMovingAverage(y, 3);
+
+            return {
+                trend: trend,
+                cycle: cycle,
+                moving_avg: moving_avg,
+                original: y
+            };
+        }
+
+        function kalmanFilterDecompositionForRegion(yearlyData) {
+            const y = yearlyData.map(d => d.avg_pm25);
+            const n = y.length;
+
+            if (n < 3) {
+                return {
+                    trend: y,
+                    smoothed: y,
+                    predicted: y,
+                    lower_bound: y,
+                    upper_bound: y,
+                    original: y
+                };
+            }
+
+            const process_var = 0.1;
+            const measurement_var = 1.0;
+
+            const x = Array(n).fill(0);
+            const P = Array(n).fill(0);
+            const x_pred = Array(n).fill(0);
+            const P_pred = Array(n).fill(0);
+
+            x[0] = y[0];
+            P[0] = measurement_var;
+
+            for (let t = 1; t < n; t++) {
+                x_pred[t] = x[t-1];
+                P_pred[t] = P[t-1] + process_var;
+
+                const K = P_pred[t] / (P_pred[t] + measurement_var);
+                x[t] = x_pred[t] + K * (y[t] - x_pred[t]);
+                P[t] = (1 - K) * P_pred[t];
+            }
+
+            const smoothed = Array(n).fill(0);
+            smoothed[n-1] = x[n-1];
+            for (let t = n-2; t >= 0; t--) {
+                const P_pred_smooth = P[t] + process_var;
+                const K_smooth = P[t] / P_pred_smooth;
+                smoothed[t] = x[t] + K_smooth * (smoothed[t+1] - x[t]);
+            }
+
+            const std_resid = Math.sqrt(y.reduce((sum, val, i) => sum + Math.pow(val - x[i], 2), 0) / (n - 1));
+            const lower_bound = smoothed.map(val => val - 1.96 * std_resid);
+            const upper_bound = smoothed.map(val => val + 1.96 * std_resid);
+
+            return {
+                trend: x,
+                smoothed: smoothed,
+                predicted: x_pred,
+                lower_bound: lower_bound,
+                upper_bound: upper_bound,
+                original: y,
+                process_var: process_var,
+                measurement_var: measurement_var
+            };
+        }
+
+        function matrixMultiply(a, b) {
+            const result = Array(a.length).fill().map(() => Array(b[0].length).fill(0));
+            for (let i = 0; i < a.length; i++) {
+                for (let j = 0; j < b[0].length; j++) {
+                    for (let k = 0; k < a[0].length; k++) {
+                        result[i][j] += a[i][k] * b[k][j];
+                    }
+                }
+            }
+            return result;
+        }
+
+        function matrixAdd(a, b) {
+            return a.map((row, i) => row.map((val, j) => val + b[i][j]));
+        }
+
+        function matrixScalarMultiply(matrix, scalar) {
+            return matrix.map(row => row.map(val => val * scalar));
+        }
+
+        function matrixSolve(A, b) {
+            const n = A.length;
+            const aug = A.map((row, i) => row.concat([b[i]]));
+
+            for (let i = 0; i < n; i++) {
+                let maxRow = i;
+                for (let j = i + 1; j < n; j++) {
+                    if (Math.abs(aug[j][i]) > Math.abs(aug[maxRow][i])) {
+                        maxRow = j;
+                    }
+                }
+                [aug[i], aug[maxRow]] = [aug[maxRow], aug[i]];
+
+                for (let j = i + 1; j < n; j++) {
+                    const factor = aug[j][i] / aug[i][i];
+                    for (let k = i; k < n + 1; k++) {
+                        aug[j][k] -= factor * aug[i][k];
+                    }
+                }
+            }
+
+            const x = Array(n).fill(0);
+            for (let i = n - 1; i >= 0; i--) {
+                x[i] = aug[i][n];
+                for (let j = i + 1; j < n; j++) {
+                    x[i] -= aug[i][j] * x[j];
+                }
+                x[i] /= aug[i][i];
+            }
+
+            return x;
+        }
+
         function filterTrendDataByCity(trendData, city, period) {
             const filtered = JSON.parse(JSON.stringify(trendData));
             const breakpoint = 2020;
 
-            if (city !== 'all' && filtered.city_data && filtered.city_data[city]) {
-                const cityYearly = filtered.city_data[city].yearly || [];
+            const cityMap = {
+                'beijing': '北京',
+                'tianjin': '天津',
+                'tangshan': '唐山',
+                'shijiazhuang': '石家庄',
+                'qinhuangdao': '秦皇岛',
+                'handan': '邯郸',
+                'xingtai': '邢台',
+                'baoding': '保定',
+                'zhangjiakou': '张家口',
+                'chengde': '承德',
+                'cangzhou': '沧州',
+                'langfang': '廊坊',
+                'hengshui': '衡水'
+            };
+
+            const chineseCity = cityMap[city] || city;
+
+            if (city !== 'all' && filtered.city_yearly && filtered.city_yearly[chineseCity]) {
+                const cityYearly = filtered.city_yearly[chineseCity] || [];
                 filtered.yearly_average = cityYearly.map(d => ({
                     year: d.year,
-                    avg_pm25: d.pm25
+                    avg_pm25: d.pm25,
+                    decline_rate: d.decline_rate,
+                    decline_rate_pct: d.decline_rate_pct,
+                    ma3: d.ma3,
+                    ma5: d.ma5
                 }));
+
+                if (filtered.city_breakpoints && filtered.city_breakpoints[chineseCity]) {
+                    filtered.breakpoint = filtered.city_breakpoints[chineseCity];
+                }
+
+                // 计算或使用预计算的卡尔曼滤波
+                if (filtered.city_kalman && filtered.city_kalman[chineseCity]) {
+                    filtered.kalman_filter = filtered.city_kalman[chineseCity];
+                } else {
+                    // 计算城市的卡尔曼滤波
+                    const cityKalman = kalmanFilterDecompositionForRegion(filtered.yearly_average);
+                    filtered.kalman_filter = cityKalman;
+                }
+
+                // 计算或使用预计算的HP滤波
+                if (filtered.city_hp_filter && filtered.city_hp_filter[chineseCity]) {
+                    filtered.hp_filter = filtered.city_hp_filter[chineseCity];
+                } else {
+                    // 计算城市的HP滤波
+                    const cityHP = hpFilterDecompositionForRegion(filtered.yearly_average);
+                    filtered.hp_filter = cityHP;
+                }
             }
 
             if (period !== 'all') {
@@ -1527,6 +1914,390 @@
                 result.push(avg);
             }
             return result;
+        }
+
+        function updateHPFilterChart() {
+            const selectedCity = document.getElementById('hp-filter-city-select').value;
+            let filteredData;
+            let displayLabel;
+            if (selectedCity === 'all') {
+                filteredData = window.globalTrendData;
+                displayLabel = '综合';
+            } else if (selectedCity === 'beijing_tianjin') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, 'all');
+                displayLabel = '京津综合';
+            } else if (selectedCity === 'hebei') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, 'all');
+                displayLabel = '河北综合';
+            } else {
+                filteredData = filterTrendDataByCity(window.globalTrendData, selectedCity, 'all');
+                const cityMap = {
+                    'beijing': '北京',
+                    'tianjin': '天津',
+                    'tangshan': '唐山',
+                    'shijiazhuang': '石家庄',
+                    'baoding': '保定',
+                    'zhangjiakou': '张家口',
+                    'chengde': '承德',
+                    'cangzhou': '沧州',
+                    'langfang': '廊坊',
+                    'hengshui': '衡水',
+                    'qinhuangdao': '秦皇岛',
+                    'handan': '邯郸',
+                    'xingtai': '邢台'
+                };
+                displayLabel = cityMap[selectedCity] || selectedCity;
+            }
+            renderHPFilterChart(filteredData, displayLabel);
+        }
+
+        function updateKalmanFilterChart() {
+            const selectedCity = document.getElementById('kalman-filter-city-select').value;
+            let filteredData;
+            let displayLabel;
+            if (selectedCity === 'all') {
+                filteredData = window.globalTrendData;
+                displayLabel = '综合';
+            } else if (selectedCity === 'beijing_tianjin') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, 'all');
+                displayLabel = '京津综合';
+            } else if (selectedCity === 'hebei') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, 'all');
+                displayLabel = '河北综合';
+            } else {
+                filteredData = filterTrendDataByCity(window.globalTrendData, selectedCity, 'all');
+                const cityMap = {
+                    'beijing': '北京',
+                    'tianjin': '天津',
+                    'tangshan': '唐山',
+                    'shijiazhuang': '石家庄',
+                    'baoding': '保定',
+                    'zhangjiakou': '张家口',
+                    'chengde': '承德',
+                    'cangzhou': '沧州',
+                    'langfang': '廊坊',
+                    'hengshui': '衡水',
+                    'qinhuangdao': '秦皇岛',
+                    'handan': '邯郸',
+                    'xingtai': '邢台'
+                };
+                displayLabel = cityMap[selectedCity] || selectedCity;
+            }
+            renderKalmanFilterChart(filteredData, displayLabel);
+        }
+
+        function updateDeclineRateChart() {
+            renderDeclineRateChart();
+        }
+
+        function renderHPFilterChart(trendData, label) {
+            const yearlyAvg = trendData.yearly_average || [];
+            const years = yearlyAvg.map(d => d.year);
+            const pm25Values = yearlyAvg.map(d => d.avg_pm25);
+
+            let hpFilter = trendData.hp_filter || {};
+            if (!hpFilter.trend || hpFilter.trend.length === 0) {
+                hpFilter = {
+                    original: pm25Values,
+                    trend: pm25Values,
+                    cycle: pm25Values.map(() => 0),
+                    moving_avg: pm25Values
+                };
+            }
+
+            if (charts.hpFilterChart) {
+                charts.hpFilterChart.destroy();
+            }
+            charts.hpFilterChart = new Chart(document.getElementById('hpFilterChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: '原始值',
+                        data: hpFilter.original || pm25Values,
+                        borderColor: '#3B82F6',
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: '趋势项',
+                        data: hpFilter.trend,
+                        borderColor: '#10B981',
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: '波动项',
+                        data: hpFilter.cycle,
+                        borderColor: '#F59E0B',
+                        fill: true,
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        title: { display: true, text: `HP滤波分解 - ${label}` },
+                        legend: { position: 'top' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+                            controls: { position: 'top-right' }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
+                    }
+                }
+            });
+        }
+
+        function renderKalmanFilterChart(trendData, label) {
+            const yearlyAvg = trendData.yearly_average || [];
+            const years = yearlyAvg.map(d => d.year);
+            const pm25Values = yearlyAvg.map(d => d.avg_pm25);
+
+            let kalmanFilter = trendData.kalman_filter || {};
+            if (!kalmanFilter.trend || kalmanFilter.trend.length === 0) {
+                kalmanFilter = {
+                    original: pm25Values,
+                    trend: pm25Values,
+                    smoothed: pm25Values,
+                    upper_bound: pm25Values,
+                    lower_bound: pm25Values
+                };
+            }
+
+            if (kalmanFilter.original && kalmanFilter.original.length > 0) {
+                document.getElementById('kalman-process-var').textContent = (kalmanFilter.process_var || 0.1).toFixed(3);
+                document.getElementById('kalman-measure-var').textContent = (kalmanFilter.measurement_var || 1.0).toFixed(3);
+                const smoothness = kalmanFilter.smoothed ?
+                    (1 - Math.abs(kalmanFilter.original.reduce((s, v, i) => s + Math.abs(v - kalmanFilter.smoothed[i]), 0) / kalmanFilter.original.reduce((s, v) => s + v, 0) * 100)).toFixed(1) + '%' : '-';
+                document.getElementById('kalman-smoothness').textContent = smoothness;
+            }
+
+            if (charts.kalmanFilterChart) {
+                charts.kalmanFilterChart.destroy();
+            }
+            charts.kalmanFilterChart = new Chart(document.getElementById('kalmanFilterChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: '原始值',
+                        data: kalmanFilter.original,
+                        borderColor: '#3B82F6',
+                        fill: false,
+                        tension: 0.4,
+                        borderWidth: 2
+                    }, {
+                        label: '滤波趋势',
+                        data: kalmanFilter.trend,
+                        borderColor: '#F59E0B',
+                        fill: false,
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    }, {
+                        label: '平滑趋势',
+                        data: kalmanFilter.smoothed,
+                        borderColor: '#10B981',
+                        fill: true,
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        tension: 0.4
+                    }, {
+                        label: '95%置信区间',
+                        data: kalmanFilter.upper_bound,
+                        borderColor: 'rgba(16, 185, 129, 0.3)',
+                        fill: '-1',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        pointRadius: 0
+                    }, {
+                        label: '下界',
+                        data: kalmanFilter.lower_bound,
+                        borderColor: 'rgba(16, 185, 129, 0.3)',
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        borderDash: [3, 3]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        title: { display: true, text: `卡尔曼滤波分解 - ${label}` },
+                        legend: { position: 'top' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
+                    }
+                }
+            });
+        }
+
+        function renderDeclineRateChart() {
+            const mode = document.getElementById('decline-rate-mode-select').value;
+            
+            // 显示/隐藏城市选择器
+            const citySelectContainer = document.getElementById('single-city-select');
+            citySelectContainer.style.display = mode === 'single' ? 'flex' : 'none';
+
+            if (mode === 'compare') {
+                renderCompareDeclineRateChart();
+            } else {
+                renderSingleDeclineRateChart();
+            }
+        }
+
+        function renderSingleDeclineRateChart() {
+            const selectedCity = document.getElementById('decline-rate-city-select').value;
+            let filteredData;
+            let displayLabel;
+
+            if (selectedCity === 'all') {
+                filteredData = window.globalTrendData;
+                displayLabel = '综合';
+            } else if (selectedCity === 'beijing_tianjin') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, 'all');
+                displayLabel = '京津综合';
+            } else if (selectedCity === 'hebei') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedCity, 'all');
+                displayLabel = '河北综合';
+            } else {
+                filteredData = filterTrendDataByCity(window.globalTrendData, selectedCity, 'all');
+                const cityMap = {
+                    'beijing': '北京',
+                    'tianjin': '天津',
+                    'tangshan': '唐山',
+                    'shijiazhuang': '石家庄',
+                    'baoding': '保定',
+                    'zhangjiakou': '张家口',
+                    'chengde': '承德',
+                    'cangzhou': '沧州',
+                    'langfang': '廊坊',
+                    'hengshui': '衡水',
+                    'qinhuangdao': '秦皇岛',
+                    'handan': '邯郸',
+                    'xingtai': '邢台'
+                };
+                displayLabel = cityMap[selectedCity] || selectedCity;
+            }
+
+            const yearlyAvg = filteredData.yearly_average || [];
+            const years = yearlyAvg.map(d => d.year);
+            const declineRates = yearlyAvg.map(d => d.decline_rate_pct);
+
+            if (charts.declineRateChart) {
+                charts.declineRateChart.destroy();
+            }
+            
+            charts.declineRateChart = new Chart(document.getElementById('declineRateChart'), {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: `${displayLabel} 年下降速率 (%)`,
+                        data: declineRates,
+                        backgroundColor: declineRates.map(v => v >= 0 ? '#10B981' : '#EF4444')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        title: { display: false },
+                        legend: { position: 'top' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+                            controls: { position: 'top-right' }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: '下降速率 (%)' } }
+                    }
+                }
+            });
+        }
+
+        function renderCompareDeclineRateChart() {
+            const trendData = window.globalTrendData;
+            const yearlyAvg = trendData.yearly_average || [];
+            const years = yearlyAvg.map(d => d.year);
+
+            const bjTjData = filterTrendDataByRegion(trendData, 'beijing_tianjin', 'all');
+            const hebeiData = filterTrendDataByRegion(trendData, 'hebei', 'all');
+
+            const bjTjYearly = bjTjData.yearly_average || [];
+            const hebeiYearly = hebeiData.yearly_average || [];
+
+            const bjTjRates = [];
+            const hebeiRates = [];
+
+            for (let i = 0; i < bjTjYearly.length; i++) {
+                bjTjRates.push(bjTjYearly[i].decline_rate_pct || 0);
+            }
+
+            for (let i = 0; i < hebeiYearly.length; i++) {
+                hebeiRates.push(hebeiYearly[i].decline_rate_pct || 0);
+            }
+
+            if (charts.declineRateChart) {
+                charts.declineRateChart.destroy();
+            }
+
+            charts.declineRateChart = new Chart(document.getElementById('declineRateChart'), {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: '京津综合下降速率 (%)',
+                        data: bjTjRates,
+                        backgroundColor: '#3498DB'
+                    }, {
+                        label: '河北综合下降速率 (%)',
+                        data: hebeiRates,
+                        backgroundColor: '#27AE60'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        title: { display: false },
+                        legend: { position: 'top' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+                            controls: { position: 'top-right' }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: '下降速率 (%)' } }
+                    }
+                }
+            });
         }
 
         function renderSingleCityChart(data, city) {
@@ -1686,15 +2457,29 @@
             modal.classList.add('show');
         }
 
+        function updateTrendChart() {
+            const selectedData = document.getElementById('data-select').value;
+            const maWindow = parseInt(document.getElementById('ma-window').value);
+            
+            let filteredData;
+            if (selectedData === 'all' || selectedData === 'beijing_tianjin' || selectedData === 'hebei') {
+                filteredData = filterTrendDataByRegion(window.globalTrendData, selectedData, 'all');
+            } else {
+                filteredData = filterTrendDataByCity(window.globalTrendData, selectedData, 'all');
+            }
+            
+            renderTrendCharts(filteredData, maWindow);
+        }
+
         function renderCityTrendChart(trendData) {
-            const cityData = trendData.city_data || {};
-            const datasets = Object.keys(cityData).map(city => ({
+            const cityData = trendData.city_yearly || {};
+            const years = trendData.yearly_average ? trendData.yearly_average.map(d => d.year) : [];
+            const cityDatasets = Object.keys(cityData).map(city => ({
                 label: city,
-                data: cityData[city].yearly?.map(d => ({ x: d.year, y: d.pm25 })) || [],
+                data: cityData[city]?.map(d => d.pm25) || [],
                 borderColor: cityColors[city] || '#' + Math.floor(Math.random()*16777215).toString(16),
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 6
+                fill: false,
+                tension: 0.4
             }));
 
             if (charts.cityTrendChart) {
@@ -1703,16 +2488,23 @@
 
             charts.cityTrendChart = new Chart(document.getElementById('cityTrendChart'), {
                 type: 'line',
-                data: { datasets },
+                data: {
+                    labels: years,
+                    datasets: cityDatasets
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         title: { display: false },
-                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } }
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+                            controls: { position: 'top-right' }
+                        }
                     },
                     scales: {
-                        x: { type: 'linear', title: { display: true, text: '年份' } },
                         y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
                     }
                 }
