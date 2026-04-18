@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PM2.5 下降瓶颈分析</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; }
+        .pixel-font { font-family: 'Press Start 2P', cursive; font-size: 10px; }
         .tab-btn.active { border-bottom: 3px solid #3B82F6; color: #3B82F6; }
         .chart-container { position: relative; height: 400px; }
         .chart-container.large { height: 500px; }
@@ -22,6 +26,8 @@
         .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .hero-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -31,12 +37,26 @@
     </div>
 
     <div id="content" class="hidden">
-        <header class="bg-white shadow-md sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-                <h1 class="text-2xl font-bold text-gray-800">PM2.5 下降瓶颈存在性验证分析</h1>
-                <p class="text-sm text-gray-500 mt-1">京津冀地区PM2.5浓度趋势与空间格局分析</p>
+        <header class="hero-gradient text-white shadow-lg sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="../../index.html" class="flex items-center space-x-2 px-4 py-2 glass-effect rounded-lg hover:bg-white/10 transition">
+                            <i class="fas fa-home"></i>
+                            <span class="text-sm font-medium">返回首页</span>
+                        </a>
+                        <div>
+                            <h1 class="text-xl font-bold">PM2.5 下降瓶颈分析</h1>
+                            <p class="text-xs text-gray-400">京津冀地区PM2.5浓度趋势与空间格局分析</p>
+                        </div>
+                    </div>
+                    <a href="../map/index.html" class="px-5 py-2 glass-effect rounded-lg hover:bg-white/10 transition flex items-center gap-2">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span class="text-sm font-medium">空间可视化</span>
+                    </a>
+                </div>
             </div>
-            <div class="border-b">
+            <div class="border-t border-white/10">
                 <nav class="flex space-x-1 px-4 max-w-7xl mx-auto">
                     <button class="tab-btn active px-4 py-3 text-sm font-medium" data-tab="trend">
                         <i class="fas fa-line-chart mr-1"></i>趋势分析

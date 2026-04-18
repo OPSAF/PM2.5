@@ -4,77 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PM2.5 空间与瓶颈分析平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; }
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
         .hero-gradient {
-            background: linear-gradient(135deg, #1a365d 0%, #2d3748 50%, #1a202c 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
         }
-        .card-hover { transition: transform 0.3s, box-shadow 0.3s; }
-        .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-12px) scale(1.02); box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
         .floating { animation: floating 3s ease-in-out infinite; }
         @keyframes floating {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-15px); }
         }
         .pulse-ring {
-            animation: pulse-ring 2s ease-out infinite;
+            animation: pulse-ring 2.5s ease-out infinite;
         }
         @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.7; }
-            100% { transform: scale(0.95); opacity: 1; }
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(0.9); opacity: 0.8; }
         }
         .gradient-text {
-            background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6);
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        .glow-blue { box-shadow: 0 0 60px rgba(59, 130, 246, 0.4); }
+        .glow-purple { box-shadow: 0 0 60px rgba(168, 85, 247, 0.4); }
+        .stat-number {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.4);
+        }
     </style>
 </head>
-<body class="bg-gray-50">
-    <header class="hero-gradient text-white">
-        <nav class="max-w-7xl mx-auto px-4 py-4">
+<body class="bg-gray-900 min-h-screen">
+    <header class="hero-gradient text-white relative overflow-hidden">
+        <nav class="max-w-7xl mx-auto px-6 py-4 relative z-10">
             <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                <a href="index.html" class="flex items-center space-x-3 group">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i class="fas fa-wind text-2xl"></i>
                     </div>
-                    <span class="text-xl font-bold">PM2.5 分析平台</span>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="modules/map/index.html" class="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition text-sm">
-                        <i class="fas fa-map mr-2"></i>空间可视化
+                    <div>
+                        <span class="text-xl font-bold tracking-wide">PM2.5 分析平台</span>
+                        <div class="text-xs text-blue-400">数据驱动决策</div>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <a href="modules/map/index.html" class="px-5 py-2 glass-effect rounded-lg hover:bg-white/10 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fas fa-map-marked-alt"></i>空间可视化
                     </a>
-                    <a href="modules/bottleneck/index.html" class="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition text-sm">
-                        <i class="fas fa-chart-line mr-2"></i>瓶颈分析
+                    <a href="modules/bottleneck/index.html" class="px-5 py-2 glass-effect rounded-lg hover:bg-white/10 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fas fa-chart-line"></i>瓶颈分析
                     </a>
                 </div>
             </div>
         </nav>
 
-        <div class="max-w-7xl mx-auto px-4 py-20 pb-32">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-40 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 left-1/3 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 py-24 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
                 <div>
-                    <div class="inline-block px-4 py-1 bg-blue-500/30 rounded-full text-sm mb-6">
-                        <i class="fas fa-satellite mr-2"></i>京津冀地区空气质量分析
+                    <div class="inline-flex items-center px-4 py-2 glass-effect rounded-full text-sm mb-8">
+                        <i class="fas fa-satellite-dish mr-2 text-blue-400"></i>京津冀地区空气质量分析
                     </div>
-                    <h1 class="text-5xl font-bold mb-6 leading-tight">
+                    <h1 class="text-6xl font-black mb-8 leading-tight">
                         <span class="gradient-text">PM2.5 空间建模</span><br>
                         <span class="text-white">与下降瓶颈分析</span>
                     </h1>
-                    <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                    <p class="text-gray-400 text-lg mb-10 leading-relaxed max-w-xl">
                         基于2014-2024年京津冀地区13个城市的PM2.5浓度数据，运用空间自相关分析、变点检测、趋势检验等方法，深入解析PM2.5浓度下降的空间格局与瓶颈期特征。
                     </p>
-                    <div class="flex flex-wrap gap-4">
-                        <a href="modules/map/index.html" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl font-semibold hover:opacity-90 transition floating">
-                            <i class="fas fa-map-marked-alt mr-2"></i>进入空间可视化
+                    <div class="flex flex-wrap gap-5">
+                        <a href="modules/map/index.html" class="btn-primary px-8 py-4 rounded-xl font-bold flex items-center gap-3 floating">
+                            <i class="fas fa-map-marked-alt"></i>进入空间可视化
                         </a>
-                        <a href="modules/bottleneck/index.html" class="px-8 py-4 bg-white/10 border border-white/30 rounded-xl font-semibold hover:bg-white/20 transition">
-                            <i class="fas fa-chart-bar mr-2"></i>进入瓶颈分析
+                        <a href="modules/bottleneck/index.html" class="px-8 py-4 glass-effect rounded-xl font-bold hover:bg-white/10 transition flex items-center gap-3">
+                            <i class="fas fa-chart-bar"></i>进入瓶颈分析
                         </a>
                     </div>
                 </div>
@@ -114,7 +146,32 @@
         </div>
     </header>
 
-    <section class="max-w-7xl mx-auto px-4 -mt-16 relative z-10">
+    <section class="max-w-7xl mx-auto px-6 -mt-16 relative z-20">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                    <div class="text-5xl font-black mb-3 gradient-text">13</div>
+                    <div class="text-sm text-gray-400">分析城市数量</div>
+                    <div class="text-xs text-gray-500 mt-2">北京、天津及河北11市</div>
+                </div>
+                <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                    <div class="text-5xl font-black mb-3 gradient-text">10</div>
+                    <div class="text-sm text-gray-400">数据时间跨度</div>
+                    <div class="text-xs text-gray-500 mt-2">2014-2024年度数据</div>
+                </div>
+                <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                    <div class="text-5xl font-black mb-3 gradient-text">2020</div>
+                    <div class="text-sm text-gray-400">检测断点年份</div>
+                    <div class="text-xs text-gray-500 mt-2">PM2.5下降放缓</div>
+                </div>
+                <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                    <div class="text-5xl font-black mb-3 gradient-text">0.45</div>
+                    <div class="text-sm text-gray-400">全局莫兰指数</div>
+                    <div class="text-xs text-gray-500 mt-2">显著空间正相关</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 -mt-8 relative z-10">
         <div class="grid md:grid-cols-2 gap-8">
             <a href="modules/map/index.html" class="card-hover bg-white rounded-2xl shadow-xl overflow-hidden block">
                 <div class="h-48 bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
@@ -168,163 +225,101 @@
         </div>
     </section>
 
-    <section class="max-w-7xl mx-auto px-4 py-20">
+    <section class="max-w-7xl mx-auto px-6 py-20">
         <div class="text-center mb-16">
-            <h2 class="text-4xl font-bold text-gray-800 mb-4">研究方法与数据</h2>
-            <p class="text-gray-600 text-lg max-w-2xl mx-auto">综合运用空间统计学、时间序列分析与计量经济学方法，构建全面的PM2.5减排效果评估体系</p>
+            <h2 class="text-4xl font-black text-white mb-4">研究方法与数据</h2>
+            <p class="text-gray-400 text-lg max-w-2xl mx-auto">综合运用空间统计学、时间序列分析与计量经济学方法，构建全面的PM2.5减排效果评估体系</p>
         </div>
         <div class="grid md:grid-cols-4 gap-6">
-            <div class="bg-white rounded-xl shadow p-6 text-center">
-                <div class="w-16 h-16 bg-gradient-to-br from-red-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-blue">
                     <i class="fas fa-globe text-white text-2xl"></i>
                 </div>
-                <h4 class="font-bold text-gray-800 mb-2">空间自相关</h4>
-                <p class="text-sm text-gray-600">全局与局部莫兰指数分析空间集聚特征</p>
+                <h4 class="font-bold text-white mb-2">空间自相关</h4>
+                <p class="text-sm text-gray-400">全局与局部莫兰指数分析空间集聚特征</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-6 text-center">
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-blue">
                     <i class="fas fa-search text-white text-2xl"></i>
                 </div>
-                <h4 class="font-bold text-gray-800 mb-2">变点检测</h4>
-                <p class="text-sm text-gray-600">Pettitt与断点回归识别趋势转折点</p>
+                <h4 class="font-bold text-white mb-2">变点检测</h4>
+                <p class="text-sm text-gray-400">Pettitt与断点回归识别趋势转折点</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-6 text-center">
-                <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-blue">
                     <i class="fas fa-balance-scale text-white text-2xl"></i>
                 </div>
-                <h4 class="font-bold text-gray-800 mb-2">异质性分析</h4>
-                <p class="text-sm text-gray-600">Theil指数分解区域差异来源</p>
+                <h4 class="font-bold text-white mb-2">异质性分析</h4>
+                <p class="text-sm text-gray-400">Theil指数分解区域差异来源</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-6 text-center">
-                <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-chart-area text-white text-2xl"></i>
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-purple">
+                    <i class="fas fa-wave-square text-white text-2xl"></i>
                 </div>
-                <h4 class="font-bold text-gray-800 mb-2">时序分解</h4>
-                <p class="text-sm text-gray-600">STL与HP滤波分离趋势与周期成分</p>
+                <h4 class="font-bold text-white mb-2">时序分解</h4>
+                <p class="text-sm text-gray-400">STL、HP滤波与卡尔曼滤波分解趋势</p>
             </div>
         </div>
     </section>
 
-    <section class="bg-white py-20">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 class="text-4xl font-bold text-gray-800 mb-6">核心发现</h2>
-                    <div class="space-y-6">
-                        <div class="flex items-start">
-                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 mr-4">
-                                <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-800 mb-1">存在显著下降瓶颈</h4>
-                                <p class="text-gray-600 text-sm">2017年后PM2.5下降速度明显放缓，2020年达到拐点，减排进入"深水区"</p>
-                            </div>
+    <section class="max-w-7xl mx-auto px-6 py-16">
+        <div class="glass-effect rounded-3xl p-10 text-center">
+            <h2 class="text-3xl font-black text-white mb-4">核心发现</h2>
+            <p class="text-gray-400 text-lg mb-10 max-w-3xl mx-auto">基于2014-2024年京津冀地区13个城市的数据分析，我们发现以下关键结论：</p>
+            <div class="grid md:grid-cols-3 gap-8 text-left">
+                <div class="p-6 bg-red-500/10 rounded-2xl border border-red-500/20">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
                         </div>
-                        <div class="flex items-start">
-                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 mr-4">
-                                <i class="fas fa-globe-americas text-blue-500 text-xl"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-800 mb-1">空间集聚效应明显</h4>
-                                <p class="text-gray-600 text-sm">莫兰指数约0.45，表明京津冀地区PM2.5存在显著的空间正相关，联防联控策略有效</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0 mr-4">
-                                <i class="fas fa-users text-green-500 text-xl"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-800 mb-1">区域协同效应增强</h4>
-                                <p class="text-gray-600 text-sm">区域内差异逐年缩小，区域协同指数持续改善，联合减排效果显著</p>
-                            </div>
-                        </div>
+                        <h4 class="text-xl font-bold text-white">下降瓶颈存在</h4>
                     </div>
+                    <p class="text-gray-400 text-sm">2020年后PM2.5年均浓度下降速率显著放缓，部分城市甚至出现反弹，验证了"下降瓶颈"现象的存在。</p>
                 </div>
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-8">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">研究数据概览</h3>
-                    <div class="space-y-4">
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600"><i class="fas fa-city mr-2 text-gray-400"></i>覆盖城市</span>
-                                <span class="font-bold text-gray-800">13个</span>
-                            </div>
+                <div class="p-6 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-project-diagram text-blue-400 text-xl"></i>
                         </div>
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600"><i class="fas fa-calendar mr-2 text-gray-400"></i>时间范围</span>
-                                <span class="font-bold text-gray-800">2014-2024</span>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600"><i class="fas fa-database mr-2 text-gray-400"></i>数据来源</span>
-                                <span class="font-bold text-gray-800">国家监测站</span>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600"><i class="fas fa-tachometer-alt mr-2 text-gray-400"></i>年均浓度</span>
-                                <span class="font-bold text-gray-800">88.5→32.8 μg/m³</span>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600"><i class="fas fa-arrow-down mr-2 text-gray-400"></i>累计降幅</span>
-                                <span class="font-bold text-green-600">-63%</span>
-                            </div>
-                        </div>
+                        <h4 class="text-xl font-bold text-white">空间集聚效应</h4>
                     </div>
+                    <p class="text-gray-400 text-sm">高浓度城市与低浓度城市分别形成显著的空间集聚簇，区域协同治理效果存在明显差异。</p>
+                </div>
+                <div class="p-6 bg-green-500/10 rounded-2xl border border-green-500/20">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-handshake text-green-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-white">区域协同</h4>
+                    </div>
+                    <p class="text-gray-400 text-sm">区域内差异呈下降趋势，但组间差异仍然显著，需要加强跨城市联防联控机制。</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="max-w-7xl mx-auto px-4 py-20">
-        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-center text-white">
-            <h2 class="text-4xl font-bold mb-4">开始探索数据</h2>
-            <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">选择您感兴趣的分析模块，深入了解京津冀地区PM2.5减排效果与空间格局</p>
-            <div class="flex justify-center gap-6 flex-wrap">
-                <a href="modules/map/index.html" class="px-8 py-4 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition">
-                    <i class="fas fa-map mr-2"></i>空间可视化
-                </a>
-                <a href="modules/bottleneck/index.html" class="px-8 py-4 bg-white/10 border-2 border-white text-white rounded-xl font-bold hover:bg-white/20 transition">
-                    <i class="fas fa-chart-line mr-2"></i>瓶颈分析
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <footer class="bg-gray-900 text-white py-12">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid md:grid-cols-3 gap-8">
-                <div>
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-wind text-2xl"></i>
-                        </div>
-                        <span class="text-xl font-bold">PM2.5 分析平台</span>
+    <footer class="hero-gradient py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-6 md:mb-0">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-wind text-white text-lg"></i>
                     </div>
-                    <p class="text-gray-400 text-sm">基于空间统计学与计量经济学方法，深入分析京津冀地区PM2.5浓度变化趋势与空间格局。</p>
+                    <div>
+                        <span class="font-bold text-white">PM2.5 分析平台</span>
+                        <div class="text-xs text-gray-400">数据驱动决策支持</div>
+                    </div>
                 </div>
-                <div>
-                    <h4 class="font-bold mb-4">分析模块</h4>
-                    <ul class="space-y-2 text-gray-400 text-sm">
-                        <li><a href="modules/map/index.html" class="hover:text-white transition"><i class="fas fa-map mr-2"></i>空间可视化</a></li>
-                        <li><a href="modules/bottleneck/index.html" class="hover:text-white transition"><i class="fas fa-chart-line mr-2"></i>瓶颈分析</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-bold mb-4">研究方法</h4>
-                    <ul class="space-y-2 text-gray-400 text-sm">
-                        <li><i class="fas fa-check mr-2 text-green-400"></i>Moran's I 空间自相关</li>
-                        <li><i class="fas fa-check mr-2 text-green-400"></i>Mann-Kendall 趋势检验</li>
-                        <li><i class="fas fa-check mr-2 text-green-400"></i>Pettitt 变点检测</li>
-                        <li><i class="fas fa-check mr-2 text-green-400"></i>Theil 指数分解</li>
-                    </ul>
+                <div class="flex items-center space-x-6">
+                    <a href="modules/map/index.html" class="text-gray-400 hover:text-white transition">空间可视化</a>
+                    <a href="modules/bottleneck/index.html" class="text-gray-400 hover:text-white transition">瓶颈分析</a>
+                    <a href="https://github.com/OPSAF/PM2.5" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
                 </div>
             </div>
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
-                <p>© 2024 PM2.5 空间与瓶颈分析平台 | 京津冀地区空气质量研究</p>
+            <div class="text-center text-gray-500 text-sm mt-8 pt-8 border-t border-white/10">
+                &copy; 2024 PM2.5 分析平台. 基于数据可视化与空间统计学方法.
             </div>
         </div>
     </footer>
