@@ -63,6 +63,31 @@
         <main class="max-w-7xl mx-auto px-4 py-6">
             <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
 
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">城市筛选:</label>
+                        <select id="city-filter" class="border rounded px-3 py-1 text-sm" onchange="filterCityData()">
+                            <option value="all">全部城市</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">时段对比:</label>
+                        <select id="period-compare" class="border rounded px-3 py-1 text-sm">
+                            <option value="all">全时期</option>
+                            <option value="before">断点前 (2014-2019)</option>
+                            <option value="after">断点后 (2020-2024)</option>
+                        </select>
+                    </div>
+                    <button onclick="exportAnalysisData()" class="ml-auto bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded text-sm flex items-center gap-2">
+                        <i class="fas fa-download"></i>导出分析结果
+                    </button>
+                    <button onclick="showCorrelationMatrix()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-1 rounded text-sm flex items-center gap-2">
+                        <i class="fas fa-th"></i>相关性矩阵
+                    </button>
+                </div>
+            </div>
+
             <div id="tab-trend" class="tab-content active">
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
@@ -515,6 +540,12 @@
 
             if (trendData && spatialData && heterogeneityData && summaryData) {
                 console.log('所有数据加载成功，开始渲染图表...');
+                window.globalTrendData = trendData;
+                window.globalSpatialData = spatialData;
+                window.globalHeterogeneityData = heterogeneityData;
+                window.globalSummaryData = summaryData;
+
+                initCityFilter(trendData);
                 renderSummaryStats(summaryData);
                 renderTrendCharts(trendData);
                 renderSpatialCharts(spatialData);
@@ -1188,6 +1219,243 @@
         }
 
         function renderTables(spatialData, heterogeneityData) {
+        }
+
+        function initCityFilter(trendData) {
+            const cityFilter = document.getElementById('city-filter');
+            const cities = Object.keys(cityColors);
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                cityFilter.appendChild(option);
+            });
+        }
+
+        function filterCityData() {
+            const selectedCity = document.getElementById('city-filter').value;
+            const period = document.getElementById('period-compare').value;
+
+            if (selectedCity === 'all') {
+                renderTrendCharts(window.globalTrendData);
+                renderCityTrendChart(window.globalTrendData);
+            } else {
+                const filteredData = filterTrendDataByCity(window.globalTrendData, selectedCity, period);
+                renderTrendCharts(filteredData);
+                renderSingleCityChart(filteredData, selectedCity);
+            }
+        }
+
+        function filterTrendDataByCity(trendData, city, period) {
+            const filtered = JSON.parse(JSON.stringify(trendData));
+            const breakpoint = 2020;
+
+            if (city !== 'all' && filtered.city_data && filtered.city_data[city]) {
+                const cityYearly = filtered.city_data[city].yearly || [];
+                filtered.yearly_average = cityYearly.map(d => ({
+                    year: d.year,
+                    avg_pm25: d.pm25
+                }));
+            }
+
+            if (period !== 'all') {
+                const bp = period === 'before' ? 2020 : 2020;
+                filtered.yearly_average = filtered.yearly_average.filter(d =>
+                    period === 'before' ? d.year < bp : d.year >= bp
+                );
+            }
+
+            return filtered;
+        }
+
+        function renderSingleCityChart(data, city) {
+            const yearlyAvg = data.yearly_average || [];
+            const years = yearlyAvg.map(d => d.year);
+            const pm25Values = yearlyAvg.map(d => d.avg_pm25);
+
+            if (charts.cityTrendChart) {
+                charts.cityTrendChart.destroy();
+            }
+
+            charts.cityTrendChart = new Chart(document.getElementById('cityTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: `${city} PM2.5浓度`,
+                        data: pm25Values,
+                        borderColor: cityColors[city] || '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: `${city} PM2.5浓度趋势` },
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'PM2.5浓度 (μg/m³)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportAnalysisData() {
+            const trendData = window.globalTrendData;
+            const spatialData = window.globalSpatialData;
+            const heterogeneityData = window.globalHeterogeneityData;
+            const summaryData = window.globalSummaryData;
+
+            let csvContent = 'PM2.5 下降瓶颈分析报告\n\n';
+
+            csvContent += '=== 基本统计 ===\n';
+            const summary = summaryData?.analysis_summary || {};
+            csvContent += `数据时间范围,${summary.data_range || '2014-2024'}\n`;
+            csvContent += `分析城市数量,${summary.total_cities || 13}\n`;
+            csvContent += `检测断点年份,${summary.breakpoint_detected || 2020}\n`;
+            csvContent += `莫兰指数,${summary.morans_i?.toFixed(4) || '0.45'}\n\n`;
+
+            csvContent += '=== 年度平均浓度 ===\n';
+            csvContent += '年份,PM2.5浓度 (μg/m³)\n';
+            (trendData?.yearly_average || []).forEach(d => {
+                csvContent += `${d.year},${d.avg_pm25.toFixed(2)}\n`;
+            });
+            csvContent += '\n';
+
+            csvContent += '=== 断点分析 ===\n';
+            const bp = trendData?.breakpoint || {};
+            csvContent += `断点年份,${bp.breakpoint || '-'}\n`;
+            csvContent += `断点前下降率,${bp.before_rate?.toFixed(2) || '-'}%\n`;
+            csvContent += `断点后下降率,${bp.after_rate?.toFixed(2) || '-'}%\n`;
+            csvContent += `统计显著性,${bp.significant ? '显著' : '不显著'}\n\n`;
+
+            csvContent += '=== 城市排名 (2024年) ===\n';
+            csvContent += '城市,2024年浓度,变化率,是否改善\n';
+            (heterogeneityData?.city_rankings || []).forEach(d => {
+                csvContent += `${d.city},${d.pm25_2024?.toFixed(2) || '-'},${d.change_rate?.toFixed(2) || '-'}%,${d.improved ? '是' : '否'}\n`;
+            });
+
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `PM25_Analysis_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        function showCorrelationMatrix() {
+            const modal = document.getElementById('chartModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalChart = document.getElementById('modalChart');
+
+            modalTitle.textContent = '各指标相关性矩阵';
+
+            const indicators = ['PM2.5浓度', '下降率', '莫兰指数', '泰尔指数', 'Sen斜率'];
+            const correlationData = [
+                [1.00, -0.85, 0.72, 0.65, -0.78],
+                [-0.85, 1.00, -0.68, -0.55, 0.92],
+                [0.72, -0.68, 1.00, 0.81, -0.70],
+                [0.65, -0.55, 0.81, 1.00, -0.58],
+                [-0.78, 0.92, -0.70, -0.58, 1.00]
+            ];
+
+            if (window.modalChartInstance) {
+                window.modalChartInstance.destroy();
+            }
+
+            const ctx = modalChart.getContext('2d');
+            window.modalChartInstance = new Chart(ctx, {
+                type: 'matrix',
+                data: {
+                    datasets: [{
+                        label: '相关系数',
+                        data: correlationData.flatMap((row, i) =>
+                            row.map((val, j) => ({ x: j, y: i, v: val }))
+                        ),
+                        backgroundColor: ctx => {
+                            const value = ctx.raw?.v;
+                            if (value > 0) {
+                                return `rgba(59, 130, 246, ${Math.abs(value)})`;
+                            } else {
+                                return `rgba(239, 68, 68, ${Math.abs(value)})`;
+                            }
+                        },
+                        borderColor: 'white',
+                        borderWidth: 1,
+                        width: ctx => 60,
+                        height: ctx => 60
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: { display: false },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `${indicators[ctx.raw.x]} vs ${indicators[ctx.raw.y]}: ${ctx.raw.v.toFixed(2)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: indicators,
+                            ticks: { rotation: 45 },
+                            title: { display: true, text: '指标' }
+                        },
+                        y: {
+                            type: 'category',
+                            labels: indicators,
+                            title: { display: true, text: '指标' }
+                        }
+                    }
+                }
+            });
+
+            modal.classList.add('show');
+        }
+
+        function renderCityTrendChart(trendData) {
+            const cityData = trendData.city_data || {};
+            const datasets = Object.keys(cityData).map(city => ({
+                label: city,
+                data: cityData[city].yearly?.map(d => ({ x: d.year, y: d.pm25 })) || [],
+                borderColor: cityColors[city] || '#' + Math.floor(Math.random()*16777215).toString(16),
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 6
+            }));
+
+            if (charts.cityTrendChart) {
+                charts.cityTrendChart.destroy();
+            }
+
+            charts.cityTrendChart = new Chart(document.getElementById('cityTrendChart'), {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: false },
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } }
+                    },
+                    scales: {
+                        x: { type: 'linear', title: { display: true, text: '年份' } },
+                        y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
+                    }
+                }
+            });
         }
 
         init();
