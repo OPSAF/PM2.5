@@ -3,1206 +3,294 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PM2.5 下降瓶颈分析</title>
+    <title>PM2.5 空间与瓶颈分析平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .tab-btn.active { border-bottom: 3px solid #3B82F6; color: #3B82F6; }
-        .chart-container { position: relative; height: 400px; }
-        .chart-container.large { height: 500px; }
-        .expand-btn { cursor: pointer; transition: transform 0.3s; }
-        .expand-btn:hover { transform: scale(1.1); }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }
-        .modal.show { display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; max-width: 90%; max-height: 90%; overflow: auto; }
-        .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; background: #0f172a; }
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+        .hero-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .floating { animation: floating 3s ease-in-out infinite; }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .pulse-ring {
+            animation: pulse-ring 2s ease-out infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(0.95); opacity: 1; }
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glow-blue { box-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+        .glow-purple { box-shadow: 0 0 30px rgba(168, 85, 247, 0.3); }
+        .stat-number {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div id="loading" class="flex flex-col items-center justify-center h-screen">
-        <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
-        <p class="mt-4 text-gray-600">正在加载数据...</p>
-    </div>
-
-    <div id="content" class="hidden">
-        <header class="bg-white shadow-md sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-                <h1 class="text-2xl font-bold text-gray-800">PM2.5 下降瓶颈存在性验证分析</h1>
-                <p class="text-sm text-gray-500 mt-1">京津冀地区PM2.5浓度趋势与空间格局分析</p>
-            </div>
-            <div class="border-b">
-                <nav class="flex space-x-1 px-4 max-w-7xl mx-auto">
-                    <button class="tab-btn active px-4 py-3 text-sm font-medium" data-tab="trend">
-                        <i class="fas fa-line-chart mr-1"></i>趋势分析
-                    </button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="spatial">
-                        <i class="fas fa-map-marker-alt mr-1"></i>空间分析
-                    </button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="heterogeneity">
-                        <i class="fas fa-balance-scale mr-1"></i>异质性分析
-                    </button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="advanced">
-                        <i class="fas fa-flask mr-1"></i>高级分析
-                    </button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="conclusions">
-                        <i class="fas fa-flag-checkered mr-1"></i>分析结论
-                    </button>
-                </nav>
-            </div>
-        </header>
-
-        <main class="max-w-7xl mx-auto px-4 py-6">
-            <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
-
-            <div id="tab-trend" class="tab-content active">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">PM2.5 年度趋势与断点分析</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('trendChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
+<body class="bg-gray-900 min-h-screen">
+    <header class="hero-gradient text-white">
+        <nav class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="index.html" class="flex items-center space-x-3 group">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-wind text-2xl"></i>
                     </div>
-                    <div class="chart-container" id="trendChartContainer">
-                        <canvas id="trendChart"></canvas>
+                    <div>
+                        <span class="text-xl font-bold tracking-wide">PM2.5 分析平台</span>
+                        <div class="text-xs text-blue-400">数据驱动决策</div>
                     </div>
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div class="bg-blue-50 p-3 rounded-lg">
-                            <div class="text-gray-600">断点年份</div>
-                            <div class="text-lg font-bold text-blue-600" id="bp-year">-</div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-gray-600">断点前下降率</div>
-                            <div class="text-lg font-bold text-green-600" id="bp-before">-</div>
-                        </div>
-                        <div class="bg-red-50 p-3 rounded-lg">
-                            <div class="text-gray-600">断点后下降率</div>
-                            <div class="text-lg font-bold text-red-600" id="bp-after">-</div>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg">
-                            <div class="text-gray-600">统计显著性</div>
-                            <div class="text-lg font-bold text-purple-600" id="bp-sig">-</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">HP滤波分解</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('hpFilterChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="hpFilterChartContainer">
-                        <canvas id="hpFilterChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">年度下降速率变化</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('declineRateChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="declineRateChartContainer">
-                        <canvas id="declineRateChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">各城市PM2.5浓度趋势</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('cityTrendChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container large" id="cityTrendChartContainer">
-                        <canvas id="cityTrendChart"></canvas>
-                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <a href="modules/map/index.html" class="px-5 py-2 glass-effect rounded-lg hover:bg-white/10 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fas fa-map-marked-alt"></i>空间可视化
+                    </a>
+                    <a href="modules/bottleneck/index.html" class="px-5 py-2 glass-effect rounded-lg hover:bg-white/10 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fas fa-chart-line"></i>瓶颈分析
+                    </a>
                 </div>
             </div>
+        </nav>
 
-            <div id="tab-spatial" class="tab-content">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">全局莫兰指数</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('moransChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
+        <div class="max-w-7xl mx-auto px-6 py-24">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <div class="inline-flex items-center px-4 py-2 glass-effect rounded-full text-sm mb-8">
+                        <i class="fas fa-satellite-dish mr-2 text-blue-400"></i>京津冀地区空气质量分析
                     </div>
-                    <div class="chart-container" id="moransChartContainer">
-                        <canvas id="moransChart"></canvas>
+                    <h1 class="text-6xl font-black mb-8 leading-tight">
+                        <span class="gradient-text">PM2.5 空间建模</span><br>
+                        <span class="text-white">与下降瓶颈分析</span>
+                    </h1>
+                    <p class="text-gray-400 text-lg mb-10 leading-relaxed max-w-xl">
+                        基于2014-2024年京津冀地区13个城市的PM2.5浓度数据，运用空间自相关分析、变点检测、趋势检验等方法，深入解析PM2.5浓度下降的空间格局与瓶颈期特征。
+                    </p>
+                    <div class="flex flex-wrap gap-5">
+                        <a href="modules/map/index.html" class="btn-primary px-8 py-4 rounded-xl font-bold flex items-center gap-3 floating">
+                            <i class="fas fa-map-marked-alt"></i>进入空间可视化
+                        </a>
+                        <a href="modules/bottleneck/index.html" class="px-8 py-4 glass-effect rounded-xl font-bold hover:bg-white/10 transition flex items-center gap-3">
+                            <i class="fas fa-chart-bar"></i>进入瓶颈分析
+                        </a>
                     </div>
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div class="bg-blue-50 p-3 rounded-lg">
-                            <div class="text-gray-600">Moran's I</div>
-                            <div class="text-lg font-bold text-blue-600" id="morans-i">-</div>
+                </div>
+                <div class="relative">
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-3xl"></div>
+                    <div class="relative bg-white/10 rounded-3xl p-8 backdrop-blur-sm border border-white/20">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white/10 rounded-xl p-4 text-center">
+                                <div class="text-3xl font-bold text-blue-400">13</div>
+                                <div class="text-sm text-gray-300">分析城市</div>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-4 text-center">
+                                <div class="text-3xl font-bold text-green-400">10年</div>
+                                <div class="text-sm text-gray-300">时间跨度</div>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-4 text-center">
+                                <div class="text-3xl font-bold text-purple-400">2020</div>
+                                <div class="text-sm text-gray-300">断点年份</div>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-4 text-center">
+                                <div class="text-3xl font-bold text-yellow-400">0.45</div>
+                                <div class="text-sm text-gray-300">莫兰指数</div>
+                            </div>
                         </div>
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-gray-600">Z-score</div>
-                            <div class="text-lg font-bold text-green-600" id="morans-z">-</div>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg">
-                            <div class="text-gray-600">P-value</div>
-                            <div class="text-lg font-bold text-purple-600" id="morans-p">-</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">LISA 集聚分析</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('lisaChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container large" id="lisaChartContainer">
-                        <canvas id="lisaChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">分位数回归分析</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('quantileChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="quantileChartContainer">
-                        <canvas id="quantileChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4">LISA 聚类结果表</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200" id="lisa-table">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">城市</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">PM2.5浓度</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">邻居均值</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">集聚类型</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="lisa-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-heterogeneity" class="tab-content">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">泰尔指数分解</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('theilChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="theilChartContainer">
-                        <canvas id="theilChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">区域内差异来源分解</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('varianceChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="varianceChartContainer">
-                        <canvas id="varianceChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">京津冀区域对比</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('regionChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="regionChartContainer">
-                        <canvas id="regionChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">城市改善排名</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('rankingChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container large" id="rankingChartContainer">
-                        <canvas id="rankingChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">区域协同指数</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('synergyChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="synergyChartContainer">
-                        <canvas id="synergyChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4">城市改善排名表</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200" id="ranking-table">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">排名</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">城市</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">2014年</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">2024年</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">变化率</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">是否改善</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="ranking-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-advanced" class="tab-content">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">Mann-Kendall 趋势检验</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('mkChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="mkChartContainer">
-                        <canvas id="mkChart"></canvas>
-                    </div>
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div class="bg-blue-50 p-3 rounded-lg">
-                            <div class="text-gray-600">趋势方向</div>
-                            <div class="text-lg font-bold text-blue-600" id="mk-trend">-</div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-gray-600">Sen's Slope</div>
-                            <div class="text-lg font-bold text-green-600" id="mk-slope">-</div>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg">
-                            <div class="text-gray-600">Z-score</div>
-                            <div class="text-lg font-bold text-purple-600" id="mk-z">-</div>
-                        </div>
-                        <div class="bg-red-50 p-3 rounded-lg">
-                            <div class="text-gray-600">P-value</div>
-                            <div class="text-lg font-bold text-red-600" id="mk-p">-</div>
+                        <div class="mt-6 bg-white/10 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-300">下降趋势</span>
+                                <span class="text-green-400 text-sm">显著</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full" style="width: 75%"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">Pettitt 变点检测</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('pettittChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="pettittChartContainer">
-                        <canvas id="pettittChart"></canvas>
-                    </div>
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div class="bg-blue-50 p-3 rounded-lg">
-                            <div class="text-gray-600">变点位置</div>
-                            <div class="text-lg font-bold text-blue-600" id="pettitt-cp">-</div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-gray-600">U 统计量</div>
-                            <div class="text-lg font-bold text-green-600" id="pettitt-u">-</div>
-                        </div>
-                        <div class="bg-red-50 p-3 rounded-lg">
-                            <div class="text-gray-600">P-value</div>
-                            <div class="text-lg font-bold text-red-600" id="pettitt-p">-</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">STL 时序分解</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('stlChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container large" id="stlChartContainer">
-                        <canvas id="stlChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">下降加速度指数</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('accelChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container" id="accelChartContainer">
-                        <canvas id="accelChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">空间权重分析</h2>
-                        <button class="expand-btn text-gray-500" onclick="expandChart('spatialWeightChart')">
-                            <i class="fas fa-expand-alt text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="chart-container large" id="spatialWeightChartContainer">
-                        <canvas id="spatialWeightChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-conclusions" class="tab-content">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4"><i class="fas fa-bullseye mr-2 text-red-500"></i>瓶颈期确认</h2>
-                    <div id="conclusion-bottleneck" class="text-gray-700 leading-relaxed p-4 bg-red-50 rounded-lg"></div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4"><i class="fas fa-globe mr-2 text-blue-500"></i>空间溢出效应</h2>
-                    <div id="conclusion-spatial" class="text-gray-700 leading-relaxed p-4 bg-blue-50 rounded-lg"></div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4"><i class="fas fa-balance-scale mr-2 text-green-500"></i>区域异质性</h2>
-                    <div id="conclusion-heterogeneity" class="text-gray-700 leading-relaxed p-4 bg-green-50 rounded-lg"></div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4"><i class="fas fa-star mr-2 text-yellow-500"></i>关键发现</h2>
-                    <div id="conclusion-keyfindings" class="text-gray-700 leading-relaxed p-4 bg-yellow-50 rounded-lg"></div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4"><i class="fas fa-chart-bar mr-2 text-purple-500"></i>统计检验汇总</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">检验方法</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">统计量</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">P-value</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">结论</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="stats-summary-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="chartModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold" id="modalTitle"></h2>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            <div class="modal-chart-container">
-                <canvas id="modalChart"></canvas>
             </div>
         </div>
-    </div>
+    </header>
 
-    <script>
-        const cityColors = {
-            '北京': '#E74C3C', '天津': '#3498DB', '保定': '#9B59B6', '唐山': '#F39C12',
-            '廊坊': '#1ABC9C', '张家口': '#E67E22', '承德': '#2ECC71', '沧州': '#34495E',
-            '石家庄': '#C0392B', '秦皇岛': '#16A085', '衡水': '#8E44AD', '邢台': '#D35400',
-            '邯郸': '#27AE60'
-        };
-
-        let charts = {};
-
-        async function loadJSON(url) {
-            try {
-                console.log(`开始加载: ${url}`);
-                const response = await fetch(url);
-                console.log(`响应状态: ${response.status} ${response.statusText}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                console.log(`加载成功: ${url}`, data);
-                return data;
-            } catch (error) {
-                console.error(`Error loading ${url}:`, error);
-                return null;
-            }
-        }
-
-        function expandChart(chartId) {
-            const modal = document.getElementById('chartModal');
-            const modalChart = document.getElementById('modalChart');
-            const modalTitle = document.getElementById('modalTitle');
-            
-            if (charts[chartId]) {
-                modalTitle.textContent = charts[chartId].options.plugins.title.text || chartId;
-                
-                if (window.modalChartInstance) {
-                    window.modalChartInstance.destroy();
-                }
-                
-                const ctx = modalChart.getContext('2d');
-                const originalChart = charts[chartId];
-                
-                window.modalChartInstance = new Chart(ctx, {
-                    type: originalChart.config.type,
-                    data: originalChart.data,
-                    options: {
-                        ...originalChart.options,
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        animation: { duration: 0 }
-                    }
-                });
-                
-                modal.classList.add('show');
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('chartModal').classList.remove('show');
-            if (window.modalChartInstance) {
-                window.modalChartInstance.destroy();
-                window.modalChartInstance = null;
-            }
-        }
-
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-            });
-        });
-
-        async function init() {
-            console.log('开始加载数据...');
-            
-            try {
-                const trendData = await loadJSON('data/pm25_trend_data.json');
-                console.log('trendData加载结果:', trendData ? '成功' : '失败');
-                
-                const spatialData = await loadJSON('data/pm25_spatial_data.json');
-                console.log('spatialData加载结果:', spatialData ? '成功' : '失败');
-                
-                const heterogeneityData = await loadJSON('data/pm25_heterogeneity_data.json');
-                console.log('heterogeneityData加载结果:', heterogeneityData ? '成功' : '失败');
-                
-                const summaryData = await loadJSON('data/pm25_analysis_summary.json');
-                console.log('summaryData加载结果:', summaryData ? '成功' : '失败');
-
-                if (trendData && spatialData && heterogeneityData && summaryData) {
-                    console.log('所有数据加载成功，开始渲染图表...');
-                    renderSummaryStats(summaryData);
-                    renderTrendCharts(trendData);
-                    renderSpatialCharts(spatialData);
-                    renderHeterogeneityCharts(heterogeneityData);
-                    renderAdvancedCharts(trendData, spatialData);
-                    renderConclusions(summaryData, trendData, spatialData, heterogeneityData);
-                    renderTables(spatialData, heterogeneityData);
-
-                    document.getElementById('loading').classList.add('hidden');
-                    document.getElementById('content').classList.remove('hidden');
-                } else {
-                    const errorDetails = [
-                        `trendData: ${trendData ? '✅' : '❌'}`,
-                        `spatialData: ${spatialData ? '✅' : '❌'}`,
-                        `heterogeneityData: ${heterogeneityData ? '✅' : '❌'}`,
-                        `summaryData: ${summaryData ? '✅' : '❌'}`
-                    ].join('<br>');
-                    
-                    document.getElementById('loading').innerHTML = `
-                        <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
-                        <p class="mt-4 text-gray-600">数据加载失败，请检查：</p>
-                        <div class="mt-2 text-sm text-gray-500">${errorDetails}</div>
-                        <p class="mt-2 text-sm text-gray-500">请打开浏览器控制台查看详细错误信息</p>
-                        <p class="mt-2 text-sm text-gray-500">请确保所有JSON文件都存在于data目录中</p>
-                    `;
-                    console.error('数据加载失败:', { trendData, spatialData, heterogeneityData, summaryData });
-                }
-            } catch (error) {
-                console.error('初始化过程出错:', error);
-                document.getElementById('loading').innerHTML = `
-                    <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
-                    <p class="mt-4 text-gray-600">初始化过程出错：</p>
-                    <div class="mt-2 text-sm text-gray-500">${error.message}</div>
-                    <p class="mt-2 text-sm text-gray-500">请打开浏览器控制台查看详细错误信息</p>
-                `;
-            }
-        }
-
-        function renderSummaryStats(summary) {
-            const container = document.getElementById('summary-stats');
-            const data = summary?.analysis_summary || {};
-            container.innerHTML = `
-                <div class="stat-card bg-white rounded-lg shadow p-4 cursor-pointer">
-                    <div class="text-3xl font-bold text-blue-600">${data.data_range || '2014-2024'}</div>
-                    <div class="text-sm text-gray-500 mt-1">数据时间范围</div>
+        <section class="max-w-7xl mx-auto px-4 py-16 relative z-10">
+        <div class="grid md:grid-cols-2 gap-8">
+            <a href="modules/map/index.html" class="card-hover bg-white rounded-2xl shadow-xl overflow-hidden block">
+                <div class="h-48 bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-black/20"></div>
+                    <div class="absolute w-64 h-64 border-2 border-white/30 rounded-full pulse-ring"></div>
+                    <div class="absolute w-48 h-48 border-2 border-white/20 rounded-full pulse-ring" style="animation-delay: 0.5s"></div>
+                    <i class="fas fa-map-marked-alt text-7xl text-white relative z-10"></i>
                 </div>
-                <div class="stat-card bg-white rounded-lg shadow p-4 cursor-pointer">
-                    <div class="text-3xl font-bold text-green-600">${data.total_cities || 13}</div>
-                    <div class="text-sm text-gray-500 mt-1">分析城市数量</div>
+                <div class="p-6">
+                    <div class="flex items-center mb-3">
+                        <span class="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-xs font-medium">空间分析</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">空间可视化模块</h3>
+                    <p class="text-gray-600 mb-4">基于笛卡尔坐标系的空间建模，展示PM2.5浓度的空间分布格局、聚类特征与时空演化动态。</p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><i class="fas fa-circle mr-1 text-purple-500"></i>气泡散点图</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><i class="fas fa-circle mr-1 text-purple-500"></i>浓度热力图</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><i class="fas fa-circle mr-1 text-purple-500"></i>时序动态图</span>
+                    </div>
+                    <div class="flex items-center text-purple-600 font-medium">
+                        <span>立即体验</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </div>
                 </div>
-                <div class="stat-card bg-white rounded-lg shadow p-4 cursor-pointer">
-                    <div class="text-3xl font-bold text-purple-600">${data.breakpoint_detected || 2020}</div>
-                    <div class="text-sm text-gray-500 mt-1">检测断点年份</div>
+            </a>
+
+            <a href="modules/bottleneck/index.html" class="card-hover bg-white rounded-2xl shadow-xl overflow-hidden block">
+                <div class="h-48 bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-black/20"></div>
+                    <div class="absolute w-64 h-64 border-2 border-white/30 rounded-full pulse-ring"></div>
+                    <div class="absolute w-48 h-48 border-2 border-white/20 rounded-full pulse-ring" style="animation-delay: 0.5s"></div>
+                    <i class="fas fa-chart-line text-7xl text-white relative z-10"></i>
                 </div>
-                <div class="stat-card bg-white rounded-lg shadow p-4 cursor-pointer">
-                    <div class="text-3xl font-bold text-red-600">${data.morans_i?.toFixed(3) || '0.45'}</div>
-                    <div class="text-sm text-gray-500 mt-1">莫兰指数</div>
+                <div class="p-6">
+                    <div class="flex items-center mb-3">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">趋势分析</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">瓶颈分析模块</h3>
+                    <p class="text-gray-600 mb-4">运用Mann-Kendall检验、断点回归、Theil指数等方法，验证PM2.5下降瓶颈的存在性与空间异质性。</p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><i class="fas fa-circle mr-1 text-blue-500"></i>趋势检验</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><i class="fas fa-circle mr-1 text-blue-500"></i>变点检测</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><i class="fas fa-circle mr-1 text-blue-500"></i>区域对比</span>
+                    </div>
+                    <div class="flex items-center text-blue-600 font-medium">
+                        <span>立即体验</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </div>
                 </div>
-            `;
-        }
+            </a>
+        </div>
+    </section>
 
-        function renderTrendCharts(trendData) {
-            const yearlyAvg = trendData.yearly_average || [];
-            const breakpoint = trendData.breakpoint || {};
-            const hpFilter = trendData.hp_filter || {};
+    <section class="max-w-7xl mx-auto px-6 py-20">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-black text-white mb-4">研究方法与数据</h2>
+            <p class="text-gray-400 text-lg max-w-2xl mx-auto">综合运用空间统计学、时间序列分析与计量经济学方法，构建全面的PM2.5减排效果评估体系</p>
+        </div>
+        <div class="grid md:grid-cols-4 gap-6">
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-blue">
+                    <i class="fas fa-globe text-white text-2xl"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">空间自相关</h4>
+                <p class="text-sm text-gray-400">全局与局部莫兰指数分析空间集聚特征</p>
+            </div>
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-blue">
+                    <i class="fas fa-search text-white text-2xl"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">变点检测</h4>
+                <p class="text-sm text-gray-400">Pettitt与断点回归识别趋势转折点</p>
+            </div>
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-blue">
+                    <i class="fas fa-balance-scale text-white text-2xl"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">异质性分析</h4>
+                <p class="text-sm text-gray-400">Theil指数分解区域差异来源</p>
+            </div>
+            <div class="glass-effect rounded-2xl p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-purple">
+                    <i class="fas fa-wave-square text-white text-2xl"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">时序分解</h4>
+                <p class="text-sm text-gray-400">STL、HP滤波与卡尔曼滤波分解趋势</p>
+            </div>
+        </div>
+    </section>
 
-            document.getElementById('bp-year').textContent = breakpoint.breakpoint || '-';
-            document.getElementById('bp-before').textContent = breakpoint.before_rate?.toFixed(2) + '%' || '-';
-            document.getElementById('bp-after').textContent = breakpoint.after_rate?.toFixed(2) + '%' || '-';
-            document.getElementById('bp-sig').textContent = breakpoint.significant ? '显著' : '不显著';
+    <section class="max-w-7xl mx-auto px-6 py-16">
+        <div class="glass-effect rounded-3xl p-10 text-center">
+            <h2 class="text-3xl font-black text-white mb-4">核心发现</h2>
+            <p class="text-gray-400 text-lg mb-10 max-w-3xl mx-auto">基于2014-2024年京津冀地区13个城市的数据分析，我们发现以下关键结论：</p>
+            <div class="grid md:grid-cols-3 gap-8 text-left">
+                <div class="p-6 bg-red-500/10 rounded-2xl border border-red-500/20">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-white">下降瓶颈存在</h4>
+                    </div>
+                    <p class="text-gray-400 text-sm">2020年后PM2.5年均浓度下降速率显著放缓，部分城市甚至出现反弹，验证了"下降瓶颈"现象的存在。</p>
+                </div>
+                <div class="p-6 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-project-diagram text-blue-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-white">空间集聚效应</h4>
+                    </div>
+                    <p class="text-gray-400 text-sm">高浓度城市与低浓度城市分别形成显著的空间集聚簇，区域协同治理效果存在明显差异。</p>
+                </div>
+                <div class="p-6 bg-green-500/10 rounded-2xl border border-green-500/20">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-handshake text-green-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-white">区域协同</h4>
+                    </div>
+                    <p class="text-gray-400 text-sm">区域内差异呈下降趋势，但组间差异仍然显著，需要加强跨城市联防联控机制。</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            const years = yearlyAvg.map(d => d.year);
-            const pm25Values = yearlyAvg.map(d => d.avg_pm25);
-
-            charts.trendChart = new Chart(document.getElementById('trendChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: 'PM2.5年均浓度',
-                        data: pm25Values,
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }, {
-                        label: 'HP滤波趋势',
-                        data: hpFilter.trend || pm25Values,
-                        borderColor: '#10B981',
-                        borderDash: [5, 5],
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: { 
-                            beginAtZero: false,
-                            title: { display: true, text: 'PM2.5浓度 (μg/m³)' }
-                        }
-                    }
-                }
-            });
-
-            charts.hpFilterChart = new Chart(document.getElementById('hpFilterChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '原始值',
-                        data: hpFilter.original || pm25Values,
-                        borderColor: '#3B82F6',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: '趋势项',
-                        data: hpFilter.trend || pm25Values,
-                        borderColor: '#10B981',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: '波动项',
-                        data: hpFilter.cycle || [],
-                        borderColor: '#F59E0B',
-                        fill: true,
-                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
-                    }
-                }
-            });
-
-            const declineRates = yearlyAvg.map(d => d.decline_rate_pct);
-            charts.declineRateChart = new Chart(document.getElementById('declineRateChart'), {
-                type: 'bar',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '年下降速率 (%)',
-                        data: declineRates,
-                        backgroundColor: declineRates.map(v => v >= 0 ? '#10B981' : '#EF4444')
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: '下降速率 (%)' } }
-                    }
-                }
-            });
-
-            const cityYearly = trendData.city_yearly || {};
-            const cities = Object.keys(cityYearly).slice(0, 8);
-            const datasets = cities.map(city => ({
-                label: city,
-                data: cityYearly[city]?.map(d => d.pm25) || [],
-                borderColor: cityColors[city] || '#' + Math.floor(Math.random()*16777215).toString(16),
-                fill: false,
-                tension: 0.4
-            }));
-
-            charts.cityTrendChart = new Chart(document.getElementById('cityTrendChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'right' }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
-                    }
-                }
-            });
-        }
-
-        function renderSpatialCharts(spatialData) {
-            const moransI = spatialData.morans_i || {};
-            const lisaClusters = spatialData.lisa_clusters || [];
-            const quantileReg = spatialData.quantile_regression || {};
-
-            document.getElementById('morans-i').textContent = moransI.moran_i?.toFixed(4) || '-';
-            document.getElementById('morans-z').textContent = moransI.z_score?.toFixed(4) || '-';
-            document.getElementById('morans-p').textContent = moransI.p_value?.toFixed(4) || '-';
-
-            charts.moransChart = new Chart(document.getElementById('moransChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Morans I', 'Z-score'],
-                    datasets: [{
-                        label: '数值',
-                        data: [moransI.moran_i || 0, moransI.z_score || 0],
-                        backgroundColor: ['#3B82F6', '#10B981']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    }
-                }
-            });
-
-            const clusterColors = { 'HH': '#E74C3C', 'LL': '#3498DB', 'HL': '#F39C12', 'LH': '#9B59B6' };
-            const clusterCounts = { 'HH': 0, 'LL': 0, 'HL': 0, 'LH': 0 };
-            lisaClusters.forEach(d => { if (clusterCounts[d.cluster] !== undefined) clusterCounts[d.cluster]++; });
-
-            charts.lisaChart = new Chart(document.getElementById('lisaChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['高-高集聚 (HH)', '低-低集聚 (LL)', '高-低离差 (HL)', '低-高离差 (LH)'],
-                    datasets: [{
-                        data: [clusterCounts.HH, clusterCounts.LL, clusterCounts.HL, clusterCounts.LH],
-                        backgroundColor: [clusterColors.HH, clusterColors.LL, clusterColors.HL, clusterColors.LH]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'right' }
-                    }
-                }
-            });
-
-            const q25 = quantileReg.q25?.avg_slope || 0;
-            const q50 = quantileReg.q50?.avg_slope || 0;
-            const q75 = quantileReg.q75?.avg_slope || 0;
-
-            charts.quantileChart = new Chart(document.getElementById('quantileChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['25%分位数', '50%分位数', '75%分位数'],
-                    datasets: [{
-                        label: '平均斜率',
-                        data: [q25, q50, q75],
-                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: '年变化斜率' } }
-                    }
-                }
-            });
-
-            let lisaTableBody = '';
-            lisaClusters.forEach(d => {
-                const colorClass = d.cluster === 'HH' ? 'bg-red-100' : d.cluster === 'LL' ? 'bg-blue-100' : 'bg-yellow-100';
-                lisaTableBody += `
-                    <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.city}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.pm25?.toFixed(2)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.neighbor_avg?.toFixed(2)}</td>
-                        <td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded ${colorClass}">${d.cluster}</span></td>
-                    </tr>
-                `;
-            });
-            document.getElementById('lisa-table-body').innerHTML = lisaTableBody;
-        }
-
-        function renderHeterogeneityCharts(heterogeneityData) {
-            const theilIndex = heterogeneityData.theil_index || [];
-            const cityRankings = heterogeneityData.city_rankings || [];
-            const regionalSynergy = heterogeneityData.regional_synergy || [];
-
-            const years = theilIndex.map(d => d.year);
-            const theilValues = theilIndex.map(d => d.theil_index);
-            const cvValues = theilIndex.map(d => d.cv);
-            const bjMeans = theilIndex.map(d => d.bj_mean);
-            const hbMeans = theilIndex.map(d => d.hb_mean);
-
-            charts.theilChart = new Chart(document.getElementById('theilChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '泰尔指数',
-                        data: theilValues,
-                        borderColor: '#8B5CF6',
-                        fill: false,
-                        tension: 0.4,
-                        yAxisID: 'y'
-                    }, {
-                        label: '变异系数',
-                        data: cvValues,
-                        borderColor: '#F59E0B',
-                        fill: false,
-                        tension: 0.4,
-                        yAxisID: 'y1'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: { type: 'linear', position: 'left', title: { display: true, text: '泰尔指数' } },
-                        y1: { type: 'linear', position: 'right', title: { display: true, text: '变异系数' } }
-                    }
-                }
-            });
-
-            charts.varianceChart = new Chart(document.getElementById('varianceChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '组间差异',
-                        data: theilIndex.map(d => d.between_group_var),
-                        borderColor: '#3B82F6',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: '组内差异',
-                        data: theilIndex.map(d => d.within_group_var),
-                        borderColor: '#EF4444',
-                        fill: false,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'top' }
-                    }
-                }
-            });
-
-            charts.regionChart = new Chart(document.getElementById('regionChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '京津均值',
-                        data: bjMeans,
-                        borderColor: '#10B981',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: '河北均值',
-                        data: hbMeans,
-                        borderColor: '#EF4444',
-                        fill: false,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
-                    }
-                }
-            });
-
-            const sortedRankings = [...cityRankings].sort((a, b) => a.change_pct - b.change_pct);
-            charts.rankingChart = new Chart(document.getElementById('rankingChart'), {
-                type: 'bar',
-                data: {
-                    labels: sortedRankings.map(d => d.city),
-                    datasets: [{
-                        label: '变化率 (%)',
-                        data: sortedRankings.map(d => d.change_pct),
-                        backgroundColor: sortedRankings.map(d => d.improvement ? '#10B981' : '#EF4444')
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: { title: { display: true, text: '变化率 (%)' } }
-                    }
-                }
-            });
-
-            const synergyYears = regionalSynergy.map(d => d.year);
-            const synergyValues = regionalSynergy.map(d => d.synergy_index);
-
-            charts.synergyChart = new Chart(document.getElementById('synergyChart'), {
-                type: 'line',
-                data: {
-                    labels: synergyYears,
-                    datasets: [{
-                        label: '区域协同指数',
-                        data: synergyValues,
-                        borderColor: '#8B5CF6',
-                        fill: true,
-                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    }
-                }
-            });
-
-            let rankingTableBody = '';
-            sortedRankings.forEach((d, i) => {
-                rankingTableBody += `
-                    <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900">${i + 1}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.city}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.pm25_2014?.toFixed(2)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.pm25_2024?.toFixed(2)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${d.change_pct?.toFixed(2)}%</td>
-                        <td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded ${d.improvement ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${d.improvement ? '是' : '否'}</span></td>
-                    </tr>
-                `;
-            });
-            document.getElementById('ranking-table-body').innerHTML = rankingTableBody;
-        }
-
-        function renderAdvancedCharts(trendData, spatialData) {
-            const mkResult = trendData.mann_kendall || {};
-            const pettittResult = trendData.pettitt || {};
-            const stlResult = trendData.stl_decomposition || {};
-            const accelIdx = trendData.acceleration_index;
-            const spatialWeights = spatialData.spatial_weights || [];
-
-            document.getElementById('mk-trend').textContent = mkResult.trend === 'decreasing' ? '下降' : mkResult.trend === 'increasing' ? '上升' : '无趋势';
-            document.getElementById('mk-slope').textContent = mkResult.sen_slope?.toFixed(4) || '-';
-            document.getElementById('mk-z').textContent = mkResult.z_score?.toFixed(4) || '-';
-            document.getElementById('mk-p').textContent = mkResult.p_value?.toFixed(4) || '-';
-
-            charts.mkChart = new Chart(document.getElementById('mkChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Z-score'],
-                    datasets: [{
-                        label: 'Z-score',
-                        data: [mkResult.z_score || 0],
-                        backgroundColor: mkResult.z_score < 0 ? '#10B981' : '#EF4444'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    }
-                }
-            });
-
-            document.getElementById('pettitt-cp').textContent = pettittResult.change_point || '-';
-            document.getElementById('pettitt-u').textContent = pettittResult.U?.toFixed(2) || '-';
-            document.getElementById('pettitt-p').textContent = pettittResult.p_value?.toFixed(4) || '-';
-
-            charts.pettittChart = new Chart(document.getElementById('pettittChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['U 统计量'],
-                    datasets: [{
-                        label: 'U',
-                        data: [pettittResult.U || 0],
-                        backgroundColor: '#3B82F6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    }
-                }
-            });
-
-            const yearlyAvg = trendData.yearly_average || [];
-            const years = yearlyAvg.map(d => d.year);
-
-            charts.stlChart = new Chart(document.getElementById('stlChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [{
-                        label: '原始值',
-                        data: stlResult.residual?.map((r, i) => (yearlyAvg[i]?.avg_pm25 || 0) - r) || [],
-                        borderColor: '#3B82F6',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: '趋势',
-                        data: stlResult.trend || [],
-                        borderColor: '#10B981',
-                        fill: false,
-                        tension: 0.4
-                    }, {
-                        label: '季节性',
-                        data: stlResult.seasonal || [],
-                        borderColor: '#F59E0B',
-                        fill: true,
-                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { position: 'top' }
-                    }
-                }
-            });
-
-            charts.accelChart = new Chart(document.getElementById('accelChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['下降加速度指数'],
-                    datasets: [{
-                        label: '加速度指数',
-                        data: [accelIdx !== null ? accelIdx * 100 : 0],
-                        backgroundColor: accelIdx < 0 ? '#EF4444' : '#10B981'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { 
-                            title: { display: true, text: '加速度指数 (%)' },
-                            min: -100,
-                            max: 100
-                        }
-                    }
-                }
-            });
-
-            charts.spatialWeightChart = new Chart(document.getElementById('spatialWeightChart'), {
-                type: 'bar',
-                data: {
-                    labels: spatialWeights.map(d => d.city),
-                    datasets: [{
-                        label: '空间权重',
-                        data: spatialWeights.map(d => d.weight),
-                        backgroundColor: '#3B82F6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: false },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: '空间权重' } }
-                    }
-                }
-            });
-        }
-
-        function renderConclusions(summary, trendData, spatialData, heterogeneityData) {
-            const bp = trendData.breakpoint || {};
-            const mk = trendData.mann_kendall || {};
-            const pettitt = trendData.pettitt || {};
-            const morans = spatialData.morans_i || {};
-            const theil = heterogeneityData.theil_index || [];
-            const synergy = heterogeneityData.regional_synergy || [];
-
-            document.getElementById('conclusion-bottleneck').innerHTML = `
-                基于2014-2024年数据分析，<strong>PM2.5年均浓度呈下降趋势</strong>，
-                Mann-Kendall检验显示趋势${mk.trend === 'decreasing' ? '<strong class="text-green-600">显著下降</strong>' : '不显著'}。
-                Pettitt变点检测显示变点位于第${pettitt.change_point || '-'}年，
-                ${pettitt.significant ? '<strong class="text-red-600">统计显著</strong>' : '统计不显著'}。
-                ${bp.significant ? '断点回归分析确认2020年前后下降速率存在<strong class="text-red-600">显著差异</strong>' : ''}。
-            `;
-
-            document.getElementById('conclusion-spatial').innerHTML = `
-                全局莫兰指数为<strong>${morans.moran_i?.toFixed(4) || '-'}</strong>，
-                ${morans.significant ? '<strong class="text-blue-600">表明PM2.5浓度存在显著的空间正自相关</strong>' : '表明PM2.5浓度存在一定的空间相关性'}。
-                Z-score为${morans.z_score?.toFixed(4) || '-'}，P值为${morans.p_value?.toFixed(4) || '-'}。
-            `;
-
-            const latestTheil = theil[theil.length - 1] || {};
-            document.getElementById('conclusion-heterogeneity').innerHTML = `
-                泰尔指数最新值为<strong>${latestTheil.theil_index?.toFixed(4) || '-'}</strong>，
-                区域内差异${latestTheil.theil_index < 0.1 ? '较小' : '较大'}。
-                区域协同指数为<strong>${synergy[synergy.length-1]?.synergy_index?.toFixed(4) || '-'}</strong>，
-                ${synergy[synergy.length-1]?.synergy_index > 0.5 ? '表明区域减排协同性较好' : '表明区域减排协同性有待提升'}。
-            `;
-
-            document.getElementById('conclusion-keyfindings').innerHTML = `
-                <ul class="space-y-2">
-                    <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>1. 趋势检验：Mann-Kendall检验确认PM2.5${mk.trend === 'decreasing' ? '呈显著下降趋势' : '无显著趋势'}</li>
-                    <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>2. 变点检测：Pettitt检验${pettitt.significant ? '检测到显著变点' : '未检测到显著变点'}</li>
-                    <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>3. 空间自相关：莫兰指数${morans.significant ? '证实存在显著空间集聚' : '空间集聚不显著'}</li>
-                    <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>4. 下降加速度：${trendData.acceleration_index < 0 ? '下降速度正在<strong class="text-red-600">放缓</strong>' : '下降速度正在<strong class="text-green-600">加快</strong>'}，存在瓶颈期特征</li>
-                </ul>
-            `;
-
-            let statsSummaryBody = '';
-            statsSummaryBody += `
-                <tr>
-                    <td class="px-4 py-3 text-sm">Mann-Kendall 趋势检验</td>
-                    <td class="px-4 py-3 text-sm">${mk.z_score?.toFixed(4) || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${mk.p_value?.toFixed(4) || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${mk.trend === 'decreasing' ? '下降趋势' : mk.trend === 'increasing' ? '上升趋势' : '无趋势'}</td>
-                </tr>
-            `;
-            statsSummaryBody += `
-                <tr>
-                    <td class="px-4 py-3 text-sm">Pettitt 变点检验</td>
-                    <td class="px-4 py-3 text-sm">${pettitt.U?.toFixed(2) || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${pettitt.p_value?.toFixed(4) || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${pettitt.significant ? '存在变点' : '无变点'}</td>
-                </tr>
-            `;
-            statsSummaryBody += `
-                <tr>
-                    <td class="px-4 py-3 text-sm">全局莫兰指数</td>
-                    <td class="px-4 py-3 text-sm">${morans.moran_i?.toFixed(4) || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${morans.p_value?.toFixed(4) || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${morans.significant ? '空间相关' : '空间独立'}</td>
-                </tr>
-            `;
-            document.getElementById('stats-summary-body').innerHTML = statsSummaryBody;
-        }
-
-        function renderTables(spatialData, heterogeneityData) {
-        }
-
-        init();
-    </script>
+    <footer class="hero-gradient py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-6 md:mb-0">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-wind text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-white">PM2.5 分析平台</span>
+                        <div class="text-xs text-gray-400">数据驱动决策支持</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="modules/map/index.html" class="text-gray-400 hover:text-white transition">空间可视化</a>
+                    <a href="modules/bottleneck/index.html" class="text-gray-400 hover:text-white transition">瓶颈分析</a>
+                    <a href="https://github.com/OPSAF/PM2.5" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="text-center text-gray-500 text-sm mt-8 pt-8 border-t border-white/10">
+                &copy; 2026 PM2.5 分析平台. 基于数据可视化与空间统计学方法.
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
