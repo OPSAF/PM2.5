@@ -133,6 +133,32 @@
 
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">卡尔曼滤波分解</h2>
+                        <button class="expand-btn text-gray-500" onclick="expandChart('kalmanFilterChart')">
+                            <i class="fas fa-expand-alt text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="chart-container" id="kalmanFilterChartContainer">
+                        <canvas id="kalmanFilterChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <div class="text-gray-600">过程噪声方差</div>
+                            <div class="text-lg font-bold text-blue-600" id="kalman-process-var">-</div>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <div class="text-gray-600">测量噪声方差</div>
+                            <div class="text-lg font-bold text-green-600" id="kalman-measure-var">-</div>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-lg">
+                            <div class="text-gray-600">滤波平滑度</div>
+                            <div class="text-lg font-bold text-purple-600" id="kalman-smoothness">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">年度下降速率变化</h2>
                         <button class="expand-btn text-gray-500" onclick="expandChart('declineRateChart')">
                             <i class="fas fa-expand-alt text-xl"></i>
@@ -686,6 +712,96 @@
                     }
                 }
             });
+
+            const kalmanFilter = trendData.kalman_filter || {};
+            if (kalmanFilter.original) {
+                document.getElementById('kalman-process-var').textContent = (kalmanFilter.process_var || 0.1).toFixed(3);
+                document.getElementById('kalman-measure-var').textContent = (kalmanFilter.measurement_var || 1.0).toFixed(3);
+                const smoothness = kalmanFilter.smoothed ?
+                    (1 - Math.abs(kalmanFilter.original.reduce((s, v, i) => s + Math.abs(v - kalmanFilter.smoothed[i]), 0) / kalmanFilter.original.reduce((s, v) => s + v, 0) * 100)).toFixed(1) + '%' : '-';
+                document.getElementById('kalman-smoothness').textContent = smoothness;
+
+                charts.kalmanFilterChart = new Chart(document.getElementById('kalmanFilterChart'), {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: '原始值',
+                            data: kalmanFilter.original,
+                            borderColor: '#3B82F6',
+                            fill: false,
+                            tension: 0.4,
+                            borderWidth: 2
+                        }, {
+                            label: '滤波趋势',
+                            data: kalmanFilter.trend,
+                            borderColor: '#F59E0B',
+                            fill: false,
+                            tension: 0.4,
+                            borderDash: [5, 5]
+                        }, {
+                            label: '平滑趋势',
+                            data: kalmanFilter.smoothed,
+                            borderColor: '#10B981',
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            tension: 0.4
+                        }, {
+                            label: '95%置信区间',
+                            data: kalmanFilter.upper_bound,
+                            borderColor: 'rgba(16, 185, 129, 0.3)',
+                            fill: '-1',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            pointRadius: 0
+                        }, {
+                            label: '下界',
+                            data: kalmanFilter.lower_bound,
+                            borderColor: 'rgba(16, 185, 129, 0.3)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            borderDash: [3, 3]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: false },
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
+                        }
+                    }
+                });
+            } else {
+                charts.kalmanFilterChart = new Chart(document.getElementById('kalmanFilterChart'), {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: '原始值',
+                            data: pm25Values,
+                            borderColor: '#3B82F6',
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: false },
+                            legend: { display: true }
+                        },
+                        scales: {
+                            y: { title: { display: true, text: 'PM2.5浓度 (μg/m³)' } }
+                        }
+                    }
+                });
+            }
 
             const declineRates = yearlyAvg.map(d => d.decline_rate_pct);
             charts.declineRateChart = new Chart(document.getElementById('declineRateChart'), {

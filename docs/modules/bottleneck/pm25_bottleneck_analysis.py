@@ -336,6 +336,67 @@ def hp_filter_decomposition(yearly_avg, lambda_val=1600):
         'original': y.tolist()
     }
 
+def kalman_filter_decomposition(yearly_avg, process_var=0.1, measurement_var=1.0):
+    """
+    一维卡尔曼滤波用于趋势分解
+    :param yearly_avg: 年度平均PM2.5数据列表，格式为 [{'year': y, 'avg_pm25': v}, ...]
+    :param process_var: 过程噪声方差（状态转移的不确定性）
+    :param measurement_var: 测量噪声方差（观测值的不确定性）
+    :return: 包含滤波后趋势、预测值、平滑值和置信区间的字典
+    """
+    data = pd.DataFrame(yearly_avg)
+    y = data['avg_pm25'].values
+    n = len(y)
+
+    if n < 3:
+        return {
+            'trend': y.tolist(),
+            'smoothed': y.tolist(),
+            'predicted': y.tolist(),
+            'lower_bound': y.tolist(),
+            'upper_bound': y.tolist(),
+            'original': y.tolist()
+        }
+
+    x = np.zeros(n)
+    P = np.zeros(n)
+    x_pred = np.zeros(n)
+    P_pred = np.zeros(n)
+
+    x[0] = y[0]
+    P[0] = measurement_var
+
+    for t in range(1, n):
+        x_pred[t] = x[t-1]
+        P_pred[t] = P[t-1] + process_var
+
+        K = P_pred[t] / (P_pred[t] + measurement_var)
+        x[t] = x_pred[t] + K * (y[t] - x_pred[t])
+        P[t] = (1 - K) * P_pred[t]
+
+    smoothed = np.zeros(n)
+    smoothed[-1] = x[-1]
+    for t in range(n-2, -1, -1):
+        P_pred_smooth = P[t] + process_var
+        K_smooth = P[t] / P_pred_smooth
+        smoothed[t] = x[t] + K_smooth * (smoothed[t+1] - x[t])
+
+    std_resid = np.std(y - x)
+
+    lower_bound = smoothed - 1.96 * std_resid
+    upper_bound = smoothed + 1.96 * std_resid
+
+    return {
+        'trend': x.tolist(),
+        'smoothed': smoothed.tolist(),
+        'predicted': x_pred.tolist(),
+        'lower_bound': lower_bound.tolist(),
+        'upper_bound': upper_bound.tolist(),
+        'original': y.tolist(),
+        'process_var': process_var,
+        'measurement_var': measurement_var
+    }
+
 def calculate_morans_i(pm25_df):
     cities = pm25_df['city'].unique()
     latest_year = pm25_df['year'].max()
@@ -567,6 +628,9 @@ def main():
     print("Performing HP filter decomposition...")
     hp_result = hp_filter_decomposition(yearly_avg)
 
+    print("Performing Kalman filter decomposition...")
+    kalman_result = kalman_filter_decomposition(yearly_avg)
+
     print("Performing Mann-Kendall trend test...")
     pm25_values = pd.DataFrame(yearly_avg)['avg_pm25'].values
     mk_result = mann_kendall_trend_test(pm25_values)
@@ -617,6 +681,7 @@ def main():
         'city_yearly': city_yearly,
         'breakpoint': breakpoint_result,
         'hp_filter': hp_result,
+        'kalman_filter': kalman_result,
         'mann_kendall': mk_result,
         'pettitt': pettitt_result,
         'acceleration_index': acceleration_idx,
