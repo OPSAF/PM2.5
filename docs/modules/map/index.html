@@ -1214,5 +1214,27 @@
 
         window.addEventListener('load', loadData);
     </script>
+
+    <!-- 评论反馈区域 -->
+    <section class="content">
+        <div class="chart-container">
+            <h2 class="chart-title">留言反馈</h2>
+            <div id="comments"></div>
+        </div>
+    </section>
+
+    <!-- Utterances 评论系统 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const script = document.createElement('script');
+            script.src = 'https://utteranc.es/client.js';
+            script.setAttribute('repo', 'OPSAF/PM2.5');
+            script.setAttribute('issue-term', 'map-feedback');
+            script.setAttribute('theme', 'github-dark');
+            script.setAttribute('crossorigin', 'anonymous');
+            script.async = true;
+            document.getElementById('comments').appendChild(script);
+        });
+    </script>
 </body>
 </html>

@@ -267,6 +267,14 @@
         </div>
     </section>
 
+    <section class="max-w-7xl mx-auto px-6 py-16">
+        <div class="glass-effect rounded-3xl p-8">
+            <h2 class="text-3xl font-bold text-white mb-6 text-center">留言反馈</h2>
+            <p class="text-gray-400 text-center mb-8">欢迎留下您的建议和反馈，帮助我们改进分析平台</p>
+            <div id="comments"></div>
+        </div>
+    </section>
+
     <footer class="hero-gradient py-12 mt-16">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex flex-col md:flex-row justify-between items-center">
@@ -292,5 +300,18 @@
             </div>
         </div>
     </footer>
+    <!-- Utterances 评论系统 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const script = document.createElement('script');
+            script.src = 'https://utteranc.es/client.js';
+            script.setAttribute('repo', 'OPSAF/PM2.5');
+            script.setAttribute('issue-term', 'homepage-feedback');
+            script.setAttribute('theme', 'github-dark');
+            script.setAttribute('crossorigin', 'anonymous');
+            script.async = true;
+            document.getElementById('comments').appendChild(script);
+        });
+    </script>
 </body>
 </html>
