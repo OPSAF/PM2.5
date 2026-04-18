@@ -459,17 +459,25 @@
                 },
                 visualMap: {
                     min: 0,
-                    max: Math.max(100, maxPm25),
-                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    max: 150,
+                    text: ['>150μg/m³ 严重污染', '<35μg/m³ 优良'],
                     textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
                     inRange: {
-                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c', '#7e0023']
                     },
                     right: 20,
                     top: 'center',
                     itemHeight: 200,
-                    itemWidth: 15
+                    itemWidth: 15,
+                    pieces: [
+                        { gte: 150, color: '#7e0023' },
+                        { gte: 115, lt: 150, color: '#99004c' },
+                        { gte: 75, lt: 115, color: '#ff0000' },
+                        { gte: 50, lt: 75, color: '#ff7e00' },
+                        { gte: 35, lt: 50, color: '#ffff00' },
+                        { gte: 0, lt: 35, color: '#00e400' }
+                    ]
                 },
                 series: [{
                     type: 'scatter',
@@ -612,23 +620,25 @@
                 },
                 visualMap: {
                     min: 0,
-                    max: Math.max(100, maxPm25),
-                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    max: 150,
+                    text: ['>150μg/m³ 严重污染', '<35μg/m³ 优良'],
                     textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
                     inRange: {
-                        color: ['#00e400', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c', '#7e0023']
                     },
                     right: 20,
                     top: 'center',
                     itemHeight: 200,
                     itemWidth: 15,
-                    formatter: function(value) {
-                        if (value >= 75) return '重度污染 ' + value;
-                        if (value >= 50) return '中度污染 ' + value;
-                        if (value >= 35) return '轻度污染 ' + value;
-                        return '优良 ' + value;
-                    }
+                    pieces: [
+                        { gte: 150, color: '#7e0023' },
+                        { gte: 115, lt: 150, color: '#99004c' },
+                        { gte: 75, lt: 115, color: '#ff0000' },
+                        { gte: 50, lt: 75, color: '#ff7e00' },
+                        { gte: 35, lt: 50, color: '#ffff00' },
+                        { gte: 0, lt: 35, color: '#00e400' }
+                    ]
                 },
                 series: [
                     {
@@ -739,17 +749,25 @@
                 },
                 visualMap: {
                     min: 0,
-                    max: Math.max(100, maxPm25),
-                    text: ['>100μg/m³ 重污染', '<35μg/m³ 优良'],
+                    max: 150,
+                    text: ['>150μg/m³ 严重污染', '<35μg/m³ 优良'],
                     textStyle: { color: '#a0a0a0', fontSize: 11 },
                     calculable: true,
                     inRange: {
-                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c', '#7e0023']
                     },
                     right: 20,
                     top: 'center',
                     itemHeight: 200,
-                    itemWidth: 15
+                    itemWidth: 15,
+                    pieces: [
+                        { gte: 150, color: '#7e0023' },
+                        { gte: 115, lt: 150, color: '#99004c' },
+                        { gte: 75, lt: 115, color: '#ff0000' },
+                        { gte: 50, lt: 75, color: '#ff7e00' },
+                        { gte: 35, lt: 50, color: '#ffff00' },
+                        { gte: 0, lt: 35, color: '#00e400' }
+                    ]
                 },
                 series: [{
                     type: 'scatter',
@@ -842,11 +860,19 @@
                 },
                 visualMap: {
                     min: 0,
-                    max: Math.max(100, maxPm25),
+                    max: 150,
                     calculable: true,
                     inRange: {
-                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c']
-                    }
+                        color: ['#00e400', '#92d050', '#ffff00', '#ff7e00', '#ff0000', '#99004c', '#7e0023']
+                    },
+                    pieces: [
+                        { gte: 150, color: '#7e0023' },
+                        { gte: 115, lt: 150, color: '#99004c' },
+                        { gte: 75, lt: 115, color: '#ff0000' },
+                        { gte: 50, lt: 75, color: '#ff7e00' },
+                        { gte: 35, lt: 50, color: '#ffff00' },
+                        { gte: 0, lt: 35, color: '#00e400' }
+                    ]
                 },
                 series: [
                     {
