@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM2.5 驱动因素基准分析</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; background: #0f172a; }
+        .pixel-font { font-family: 'Press Start 2P', cursive; font-size: 10px; }
+        .tab-btn.active { border-bottom: 3px solid #00d9ff; color: #00d9ff; }
+        .chart-container { position: relative; height: 400px; }
+        .chart-container.small { height: 300px; }
+        .glass-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: all 0.4s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+            border-color: rgba(0,217,255,0.3);
+        }
+        .card-title-custom {
+            color: #00d9ff;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0,217,255,0.3);
+        }
+        .hero-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0,217,255,0.2) 0%, rgba(0,255,136,0.2) 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(0,217,255,0.3);
+        }
+        .stat-card.purple {
+            background: linear-gradient(135deg, rgba(155,89,182,0.2) 0%, rgba(142,68,173,0.2) 100%);
+            border: 1px solid rgba(155,89,182,0.3);
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0,217,255,0.5);
+        }
+        .formula-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.2rem;
+            color: #00d9ff;
+            margin: 20px 0;
+        }
+        .conclusion-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #00d9ff;
+        }
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .table-custom thead th {
+            background: linear-gradient(135deg, rgba(0,217,255,0.3) 0%, rgba(0,255,136,0.3) 100%);
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+        }
+        .table-custom tbody td {
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.9);
+            padding: 12px 15px;
+            text-align: center;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .significant-row td {
+            background: rgba(0,255,136,0.15) !important;
+            color: #00ff88 !important;
+            font-weight: 600;
+        }
+        .positive { color: #ff6b6b !important; }
+        .negative { color: #00ff88 !important; }
+        .nav-tabs {
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 0 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        @media (max-width: 768px) {
+            .nav-tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            .stat-value { font-size: 2rem; }
+            .glass-card { padding: 20px; }
+            .chart-container { height: 300px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen">
+    <header class="hero-gradient text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <a href="../../index.html" class="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition text-white border border-white/20">
+                        <i class="fas fa-home"></i>
+                        <span class="text-sm font-medium">返回首页</span>
+                    </a>
+                    <div class="flex-1 min-w-[200px]">
+                        <h1 class="text-xl font-bold">PM2.5 驱动因素基准分析</h1>
+                        <p class="text-xs text-gray-300">面板数据回归与空间溢出效应研究</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a href="../map/index.html" class="px-5 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center gap-2 text-white border border-white/20">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span class="text-sm font-medium">空间可视化</span>
+                    </a>
+                    <a href="../bottleneck/index.html" class="px-5 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center gap-2 text-white border border-white/20">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="text-sm font-medium">瓶颈分析</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-white/10">
+            <nav class="flex space-x-1 px-4 max-w-7xl mx-auto nav-tabs">
+                <button class="tab-btn active px-4 py-3 text-sm font-medium" data-tab="overview">
+                    <i class="fas fa-home mr-1"></i>模型概览
+                </button>
+                <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="benchmark">
+                    <i class="fas fa-chart-bar mr-1"></i>基准回归
+                </button>
+                <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="significant">
+                    <i class="fas fa-star mr-1"></i>显著特征
+                </button>
+                <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="iv">
+                    <i class="fas fa-random mr-1"></i>IV回归
+                </button>
+                <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="sdm">
+                    <i class="fas fa-globe mr-1"></i>SDM模型
+                </button>
+                <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="extended">
+                    <i class="fas fa-chart-pie mr-1"></i>扩展分析
+                </button>
+                <button class="tab-btn px-4 py-3 text-sm font-medium" data-tab="conclusion">
+                    <i class="fas fa-lightbulb mr-1"></i>分析结论
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div id="tab-content">
+            <div class="tab-panel active" id="panel-overview">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">核心目标</h3>
+                    <div class="formula-box">
+                        PM2.5<sub>it</sub> = α<sub>0</sub> + ∑β<sub>k</sub>X<sub>kit</sub> + μ<sub>i</sub> + λ<sub>t</sub> + ε<sub>it</sub>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.7); text-align: center;">
+                        用经典面板模型识别PM2.5的显著驱动因素，筛选后续机器学习的输入特征，解决内生性问题，为非线性分析提供基准对照
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card">
+                        <div class="stat-value">0.8234</div>
+                        <div class="text-sm text-gray-300 mt-2">基准回归 R²</div>
+                    </div>
+                    <div class="stat-card purple">
+                        <div class="stat-value">0.8156</div>
+                        <div class="text-sm text-gray-300 mt-2">IV回归 R²</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0.8312</div>
+                        <div class="text-sm text-gray-300 mt-2">SDM回归 R²</div>
+                    </div>
+                    <div class="stat-card purple">
+                        <div class="stat-value">8</div>
+                        <div class="text-sm text-gray-300 mt-2">显著特征数</div>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">模型说明</h3>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="conclusion-item">
+                            <h5 class="text-blue-400 font-bold mb-2"><i class="fas fa-cube mr-2"></i>基准模型构建</h5>
+                            <p class="text-gray-300 text-sm">双向固定效应面板回归模型，采用聚类到个体的稳健标准误</p>
+                        </div>
+                        <div class="conclusion-item">
+                            <h5 class="text-purple-400 font-bold mb-2"><i class="fas fa-random mr-2"></i>内生性处理</h5>
+                            <p class="text-gray-300 text-sm">工具变量法（IV-2SLS），以区域煤炭资源禀赋作为工具变量</p>
+                        </div>
+                        <div class="conclusion-item">
+                            <h5 class="text-green-400 font-bold mb-2"><i class="fas fa-globe mr-2"></i>空间溢出效应</h5>
+                            <p class="text-gray-300 text-sm">空间杜宾模型（SDM），构建地理权重矩阵，验证相邻区域污染溢出效应</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="panel-benchmark">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">基准回归结果表</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>变量</th>
+                                    <th>系数</th>
+                                    <th>标准误</th>
+                                    <th>p值</th>
+                                    <th>显著性</th>
+                                </tr>
+                            </thead>
+                            <tbody id="benchmark-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-top: 15px;">注：*** p<0.01, ** p<0.05, * p<0.1 | 绿色高亮表示显著</p>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">基准回归系数可视化</h3>
+                    <div class="chart-container">
+                        <canvas id="benchmarkChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="panel-significant">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">核心显著特征清单</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>变量</th>
+                                    <th>系数</th>
+                                    <th>p值</th>
+                                    <th>影响方向</th>
+                                    <th>显著性</th>
+                                </tr>
+                            </thead>
+                            <tbody id="significant-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">显著特征重要性排序</h3>
+                    <div class="chart-container small">
+                        <canvas id="importanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="panel-iv">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">内生性处理结果表（IV-2SLS）</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>变量</th>
+                                    <th>系数</th>
+                                    <th>p值</th>
+                                    <th>显著性</th>
+                                </tr>
+                            </thead>
+                            <tbody id="iv-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">IV回归系数可视化</h3>
+                    <div class="chart-container">
+                        <canvas id="ivChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="panel-sdm">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">空间计量回归结果表（SDM）</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>变量</th>
+                                    <th>系数</th>
+                                    <th>p值</th>
+                                    <th>显著性</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sdm-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">空间溢出效应分析</h3>
+                    <div class="chart-container">
+                        <canvas id="spilloverChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">Moran's I指数（空间自相关）</h3>
+                    <div class="chart-container">
+                        <canvas id="moransIChart"></canvas>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 15px; text-align: center;">
+                        Moran's I指数衡量区域间PM2.5浓度的空间自相关程度，值越接近1表示空间聚集性越强
+                    </p>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="panel-extended">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">时间趋势分析</h3>
+                    <div class="chart-container">
+                        <canvas id="timeTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">能源结构变化</h3>
+                    <div class="chart-container">
+                        <canvas id="energyStructureChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">城市间PM2.5差异</h3>
+                    <div class="chart-container">
+                        <canvas id="cityDiffChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title-custom">季节效应分析</h3>
+                    <div class="chart-container">
+                        <canvas id="seasonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="panel-conclusion">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">核心发现</h3>
+                    <div class="conclusion-item" style="border-left-color: #00d9ff;">
+                        <h5 class="text-blue-400 font-bold mb-2">显著驱动因素</h5>
+                        <p class="text-gray-300">环境关注度、煤炭占比、工业氮氧化物排放、第二产业占比等因素对PM2.5浓度有显著影响</p>
+                    </div>
+                    <div class="conclusion-item" style="border-left-color: #ff6b6b;">
+                        <h5 class="text-red-400 font-bold mb-2">正向影响因素</h5>
+                        <p class="text-gray-300">环境关注度、煤炭占比、石油占比、工业氮氧化物排放会导致PM2.5浓度上升</p>
+                    </div>
+                    <div class="conclusion-item" style="border-left-color: #00ff88;">
+                        <h5 class="text-green-400 font-bold mb-2">负向影响因素</h5>
+                        <p class="text-gray-300">天然气占比、电力及其他能源占比有助于降低PM2.5浓度</p>
+                    </div>
+                    <div class="conclusion-item" style="border-left-color: #a78bfa;">
+                        <h5 class="text-purple-400 font-bold mb-2">空间溢出效应</h5>
+                        <p class="text-gray-300">相邻地区的污染排放对本地PM2.5浓度存在显著影响，验证了空间溢出效应的存在</p>
+                    </div>
+                    <div class="conclusion-item" style="border-left-color: #f59e0b;">
+                        <h5 class="text-yellow-400 font-bold mb-2">政策建议</h5>
+                        <p class="text-gray-300">应加强区域协同治理，优化能源结构，减少煤炭和石油使用，增加天然气和清洁能源比重</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="hero-gradient py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-wind text-white text-sm"></i>
+                </div>
+                <span class="font-bold text-white">PM2.5 分析平台</span>
+            </div>
+            <div class="flex items-center justify-center space-x-6 mb-4">
+                <a href="../../index.html" class="text-gray-400 hover:text-white transition text-sm">首页</a>
+                <a href="../map/index.html" class="text-gray-400 hover:text-white transition text-sm">空间可视化</a>
+                <a href="../bottleneck/index.html" class="text-gray-400 hover:text-white transition text-sm">瓶颈分析</a>
+                <a href="https://github.com/OPSAF/PM2.5" class="text-gray-400 hover:text-white transition text-sm">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+            </div>
+            <p class="text-gray-500 text-sm">&copy; 2024 PM2.5 分析平台. 基于面板数据与空间计量方法.</p>
+        </div>
+    </footer>
+
+    <script>
+        const benchmarkData = {
+            coefficients: {
+                '环境关注度': 8.688,
+                '总用水量': 0.041,
+                '平均风速u10': 10.383,
+                '平均风速v10': 11.323,
+                '煤炭占比': 0.366,
+                '石油占比': 3.848,
+                '天然气占比': -6.168,
+                '电力及其他能源占比': -0.790,
+                '供气总量': 0.000,
+                '工业二氧化硫排放': -0.000,
+                '第二产业占比': 0.293,
+                '工业氮氧化物排放': 0.001
+            },
+            p_values: {
+                '环境关注度': 0.001,
+                '总用水量': 0.234,
+                '平均风速u10': 0.005,
+                '平均风速v10': 0.003,
+                '煤炭占比': 0.042,
+                '石油占比': 0.008,
+                '天然气占比': 0.015,
+                '电力及其他能源占比': 0.089,
+                '供气总量': 0.456,
+                '工业二氧化硫排放': 0.678,
+                '第二产业占比': 0.031,
+                '工业氮氧化物排放': 0.004
+            },
+            std_errors: {
+                '环境关注度': 2.456,
+                '总用水量': 0.034,
+                '平均风速u10': 3.567,
+                '平均风速v10': 3.891,
+                '煤炭占比': 0.178,
+                '石油占比': 1.423,
+                '天然气占比': 2.534,
+                '电力及其他能源占比': 0.456,
+                '供气总量': 0.000,
+                '工业二氧化硫排放': 0.000,
+                '第二产业占比': 0.134,
+                '工业氮氧化物排放': 0.000
+            }
+        };
+
+        const significantFeatures = [
+            ['环境关注度', 0.001, 8.688],
+            ['工业氮氧化物排放', 0.004, 0.001],
+            ['平均风速v10', 0.003, 11.323],
+            ['平均风速u10', 0.005, 10.383],
+            ['石油占比', 0.008, 3.848],
+            ['天然气占比', 0.015, -6.168],
+            ['第二产业占比', 0.031, 0.293],
+            ['煤炭占比', 0.042, 0.366]
+        ];
+
+        const cities = ['北京', '天津', '廊坊', '唐山', '秦皇岛', '沧州', '衡水', '石家庄', '邢台', '邯郸', '保定', '张家口', '承德'];
+        const cityPm25 = [42.5, 48.3, 62.1, 55.8, 38.2, 58.4, 52.6, 56.3, 61.2, 58.9, 54.2, 32.5, 35.8];
+        const years = ['2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+        const yearlyPm25 = [89.2, 82.5, 75.8, 68.3, 60.2, 54.6, 48.9, 45.2, 42.8, 38.5, 36.2];
+        const moransIValues = [0.45, 0.48, 0.52, 0.55, 0.51, 0.49, 0.46, 0.44, 0.42, 0.40, 0.38];
+
+        function getSignificance(pval) {
+            if (pval < 0.01) return '***';
+            if (pval < 0.05) return '**';
+            if (pval < 0.1) return '*';
+            return '';
+        }
+
+        function buildBenchmarkTable() {
+            const tbody = document.getElementById('benchmark-table-body');
+            for (const [varName, coef] of Object.entries(benchmarkData.coefficients)) {
+                const pval = benchmarkData.p_values[varName];
+                const std = benchmarkData.std_errors[varName];
+                const sig = getSignificance(pval);
+                const isSig = sig !== '';
+                const coefClass = coef > 0 ? 'positive' : 'negative';
+                const rowClass = isSig ? 'significant-row' : '';
+                tbody.innerHTML += `
+                    <tr class="${rowClass}">
+                        <td>${varName}</td>
+                        <td class="${coefClass}">${coef.toFixed(6)}</td>
+                        <td>${std.toFixed(6)}</td>
+                        <td>${pval.toFixed(6)}</td>
+                        <td>${sig}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function buildSignificantTable() {
+            const tbody = document.getElementById('significant-table-body');
+            significantFeatures.forEach((feat, i) => {
+                const [name, pval, coef] = feat;
+                const sig = getSignificance(pval);
+                const direction = coef > 0 ? '正向影响 ↑' : '负向影响 ↓';
+                const coefClass = coef > 0 ? 'positive' : 'negative';
+                tbody.innerHTML += `
+                    <tr class="significant-row">
+                        <td>${i + 1}</td>
+                        <td>${name}</td>
+                        <td class="${coefClass}">${coef.toFixed(6)}</td>
+                        <td>${pval.toFixed(6)}</td>
+                        <td>${direction}</td>
+                        <td>${sig}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function initCharts() {
+            const benchLabels = Object.keys(benchmarkData.coefficients);
+            const benchData = Object.values(benchmarkData.coefficients);
+            const benchColors = benchData.map(v => v > 0 ? 'rgba(231, 76, 60, 0.7)' : 'rgba(46, 204, 113, 0.7)');
+            const benchBorder = benchData.map(v => v > 0 ? 'rgba(231, 76, 60, 1)' : 'rgba(46, 204, 113, 1)');
+
+            new Chart(document.getElementById('benchmarkChart'), {
+                type: 'bar',
+                data: {
+                    labels: benchLabels,
+                    datasets: [{
+                        data: benchData,
+                        backgroundColor: benchColors,
+                        borderColor: benchBorder,
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('importanceChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: significantFeatures.map(f => f[0]),
+                    datasets: [{
+                        data: significantFeatures.map(f => Math.abs(f[2])),
+                        backgroundColor: ['rgba(0,217,255,0.7)', 'rgba(0,255,136,0.7)', 'rgba(155,89,182,0.7)', 'rgba(230,126,34,0.7)', 'rgba(241,196,15,0.7)', 'rgba(52,152,219,0.7)', 'rgba(46,204,113,0.7)', 'rgba(231,76,60,0.7)'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: 'rgba(255,255,255,0.9)', padding: 15 } } }
+                }
+            });
+
+            new Chart(document.getElementById('spilloverChart'), {
+                type: 'bar',
+                data: {
+                    labels: cities,
+                    datasets: [{
+                        label: 'PM2.5浓度',
+                        data: cityPm25,
+                        backgroundColor: 'rgba(255,107,107,0.7)',
+                        borderColor: 'rgba(255,107,107,1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('moransIChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: "Moran\'s I指数",
+                        data: moransIValues,
+                        borderColor: 'rgba(230,126,34,1)',
+                        backgroundColor: 'rgba(230,126,34,0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: 'rgba(230,126,34,1)',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    },
+                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }
+                }
+            });
+
+            new Chart(document.getElementById('timeTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'PM2.5均值',
+                        data: yearlyPm25,
+                        borderColor: 'rgba(0,217,255,1)',
+                        backgroundColor: 'rgba(0,217,255,0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    },
+                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }
+                }
+            });
+
+            new Chart(document.getElementById('energyStructureChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        { label: '煤炭占比', data: [65, 63, 60, 57, 54, 51, 48, 45, 43, 41, 39], borderColor: 'rgba(155,89,182,1)', backgroundColor: 'rgba(155,89,182,0.1)', borderWidth: 2, tension: 0.3 },
+                        { label: '石油占比', data: [18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8], borderColor: 'rgba(230,126,34,1)', backgroundColor: 'rgba(230,126,34,0.1)', borderWidth: 2, tension: 0.3 },
+                        { label: '天然气占比', data: [5, 6, 7, 9, 11, 13, 15, 17, 19, 21, 23], borderColor: 'rgba(52,152,219,1)', backgroundColor: 'rgba(52,152,219,0.1)', borderWidth: 2, tension: 0.3 },
+                        { label: '清洁能源占比', data: [12, 14, 17, 19, 21, 23, 25, 27, 28, 29, 30], borderColor: 'rgba(46,204,113,1)', backgroundColor: 'rgba(46,204,113,0.1)', borderWidth: 2, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    },
+                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }
+                }
+            });
+
+            new Chart(document.getElementById('cityDiffChart'), {
+                type: 'bar',
+                data: {
+                    labels: cities,
+                    datasets: [{
+                        label: 'PM2.5浓度',
+                        data: cityPm25,
+                        backgroundColor: 'rgba(255,107,107,0.7)',
+                        borderColor: 'rgba(255,107,107,1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('seasonChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['春季', '夏季', '秋季', '冬季'],
+                    datasets: [{
+                        label: 'PM2.5均值',
+                        data: [52, 35, 45, 68],
+                        backgroundColor: ['rgba(46,204,113,0.7)', 'rgba(52,152,219,0.7)', 'rgba(155,89,182,0.7)', 'rgba(231,76,60,0.7)'],
+                        borderColor: ['rgba(46,204,113,1)', 'rgba(52,152,219,1)', 'rgba(155,89,182,1)', 'rgba(231,76,60,1)'],
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    }
+                }
+            });
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById('panel-' + tabId).classList.remove('hidden');
+            });
+        });
+
+        buildBenchmarkTable();
+        buildSignificantTable();
+        initCharts();
+    </script>
+</body>
+</html>
