@@ -1,0 +1,746 @@
+{
+  "data_info": {
+    "time_dimension": "2010-2024",
+    "spatial_dimension": "京津冀13个地级市",
+    "cities": [
+      "北京",
+      "天津",
+      "保定",
+      "唐山",
+      "廊坊",
+      "张家口",
+      "承德",
+      "沧州",
+      "石家庄",
+      "秦皇岛",
+      "衡水",
+      "邢台",
+      "邯郸"
+    ],
+    "total_observations": 195,
+    "variables": [
+      "year",
+      "city",
+      "Unnamed: 0",
+      "env_attention",
+      "total_water",
+      "avg_u10",
+      "avg_v10",
+      "tobeijing",
+      "totianjin",
+      "toshijiazhuang",
+      "totangshan",
+      "toqinhuangdao",
+      "tohandan",
+      "toxingtai",
+      "tobaoding",
+      "tozhangjiakou",
+      "tochengde",
+      "tocangzhou",
+      "tolangfang",
+      "tohengshui",
+      "煤炭占能源消费总量的比重 (%)",
+      "石油占能源消费总量的比重 (%)",
+      "天然气占能源消费总量的比重 (%)",
+      "一次电力及其他能源占能源总量的比重 (%)",
+      "pm25",
+      "第二产业占比",
+      "供气总量"
+    ],
+    "dependent_variable": "pm25",
+    "independent_variables": [
+      "env_attention",
+      "total_water",
+      "avg_u10",
+      "avg_v10",
+      "tobeijing",
+      "totianjin",
+      "toshijiazhuang",
+      "totangshan",
+      "toqinhuangdao",
+      "tohandan",
+      "toxingtai",
+      "tobaoding",
+      "tozhangjiakou",
+      "tochengde",
+      "tocangzhou",
+      "tolangfang",
+      "tohengshui",
+      "煤炭占能源消费总量的比重 (%)",
+      "石油占能源消费总量的比重 (%)",
+      "天然气占能源消费总量的比重 (%)",
+      "一次电力及其他能源占能源总量的比重 (%)",
+      "第二产业占比",
+      "供气总量"
+    ]
+  },
+  "variable_description": {
+    "pm25": "PM2.5浓度（被解释变量）",
+    "env_attention": "环境关注度",
+    "total_water": "总水量",
+    "avg_u10": "东向风速分量",
+    "avg_v10": "北向风速分量",
+    "tobeijing": "到北京的距离",
+    "totianjin": "到天津的距离",
+    "toshijiazhuang": "到石家庄的距离",
+    "totangshan": "到唐山的距离",
+    "toqinhuangdao": "到秦皇岛的距离",
+    "tohandan": "到邯郸的距离",
+    "toxingtai": "到邢台的距禋",
+    "tobaoding": "到保定的距禋",
+    "tozhangjiakou": "到张家口的距禋",
+    "tochengde": "到承德的距禋",
+    "tocangzhou": "到沧州的距禋",
+    "tolangfang": "到廊坊的距禋",
+    "tohengshui": "到衡水的距禋",
+    "煤炭占能源消费总量的比重 (%)": "煤炭占能源消费总量的比重",
+    "石油占能源消费总量的比重 (%)": "石油占能源消费总量的比重",
+    "天然气占能源消费总量的比重 (%)": "天然气占能源消费总量的比重",
+    "一次电力及其他能源占能源总量的比重 (%)": "一次电力及其他能源占能源总量的比重",
+    "第二产业占比": "第二产业占比",
+    "供气总量": "供气总量"
+  },
+  "missing_value_treatment": {
+    "method": "线性插值填充少量缺失值",
+    "removed_variables": "无",
+    "removed_for_multicollinearity": [
+      "avg_v10",
+      "tobeijing",
+      "totianjin",
+      "toshijiazhuang",
+      "totangshan",
+      "toqinhuangdao",
+      "tohandan",
+      "toxingtai",
+      "tobaoding",
+      "tozhangjiakou",
+      "tochengde",
+      "tocangzhou",
+      "tolangfang",
+      "tohengshui",
+      "煤炭占能源消费总量的比重 (%)",
+      "石油占能源消费总量的比重 (%)",
+      "天然气占能源消费总量的比重 (%)",
+      "一次电力及其他能源占能源总量的比重 (%)",
+      "第二产业占比",
+      "供气总量"
+    ]
+  },
+  "outlier_treatment": {
+    "method": "3σ原则",
+    "sigma_level": 3,
+    "tail_level": 0.01
+  },
+  "standardization": {
+    "method": "Z-score标准化",
+    "description": "均值0，方差1，消除量纲差异"
+  },
+  "stationarity_test": {
+    "llc_test": {
+      "pm25": {
+        "statistic": 6.233170216051359e-15,
+        "p_value": 0.9999999999999951,
+        "stationary": true
+      },
+      "env_attention": {
+        "statistic": -7.632453325777173e-16,
+        "p_value": 0.9999999999999993,
+        "stationary": true
+      },
+      "total_water": {
+        "statistic": 7.1554249929161e-17,
+        "p_value": 1.0,
+        "stationary": true
+      },
+      "avg_u10": {
+        "statistic": -2.5441511085923917e-16,
+        "p_value": 0.9999999999999998,
+        "stationary": true
+      },
+      "avg_v10": {
+        "statistic": 0.0,
+        "p_value": 1.0,
+        "stationary": true
+      },
+      "tobeijing": {
+        "statistic": 0.0,
+        "p_value": 1.0,
+        "stationary": true
+      },
+      "totianjin": {
+        "statistic": 2.544151108592389e-15,
+        "p_value": 0.999999999999998,
+        "stationary": true
+      },
+      "toshijiazhuang": {
+        "statistic": -1.526490665155434e-15,
+        "p_value": 0.9999999999999988,
+        "stationary": true
+      },
+      "totangshan": {
+        "statistic": -4.070641773747824e-15,
+        "p_value": 0.9999999999999968,
+        "stationary": true
+      },
+      "toqinhuangdao": {
+        "statistic": 2.798566219451628e-15,
+        "p_value": 0.9999999999999978,
+        "stationary": true
+      },
+      "tohandan": {
+        "statistic": -5.088302217184783e-16,
+        "p_value": 0.9999999999999996,
+        "stationary": true
+      },
+      "toxingtai": {
+        "statistic": 1.0176604434369565e-15,
+        "p_value": 0.9999999999999991,
+        "stationary": true
+      },
+      "tobaoding": {
+        "statistic": -4.070641773747828e-15,
+        "p_value": 0.9999999999999968,
+        "stationary": true
+      },
+      "tozhangjiakou": {
+        "statistic": -5.088302217184783e-15,
+        "p_value": 0.999999999999996,
+        "stationary": true
+      },
+      "tochengde": {
+        "statistic": -3.5618115520293446e-15,
+        "p_value": 0.9999999999999971,
+        "stationary": true
+      },
+      "tocangzhou": {
+        "statistic": 2.41694355316277e-15,
+        "p_value": 0.999999999999998,
+        "stationary": true
+      },
+      "tolangfang": {
+        "statistic": -1.0176604434369565e-15,
+        "p_value": 0.9999999999999991,
+        "stationary": true
+      },
+      "tohengshui": {
+        "statistic": 2.798566219451631e-15,
+        "p_value": 0.9999999999999978,
+        "stationary": true
+      },
+      "煤炭占能源消费总量的比重 (%)": {
+        "statistic": 1.4628868874406238e-15,
+        "p_value": 0.9999999999999989,
+        "stationary": true
+      },
+      "石油占能源消费总量的比重 (%)": {
+        "statistic": -9.50240439059258e-14,
+        "p_value": 0.9999999999999243,
+        "stationary": true
+      },
+      "天然气占能源消费总量的比重 (%)": {
+        "statistic": 3.816226662888583e-15,
+        "p_value": 0.9999999999999969,
+        "stationary": true
+      },
+      "一次电力及其他能源占能源总量的比重 (%)": {
+        "statistic": 4.452264440036687e-15,
+        "p_value": 0.9999999999999964,
+        "stationary": true
+      },
+      "第二产业占比": {
+        "statistic": 9.222547768647414e-15,
+        "p_value": 0.9999999999999927,
+        "stationary": true
+      },
+      "供气总量": {
+        "statistic": 0.0,
+        "p_value": 1.0,
+        "stationary": true
+      }
+    },
+    "ips_test": {
+      "pm25": {
+        "statistic": 38.16270747002769,
+        "p_value": 5.1650361518259055e-09,
+        "stationary": false
+      },
+      "env_attention": {
+        "statistic": 6.715064331728169,
+        "p_value": 0.034821085661975004,
+        "stationary": false
+      },
+      "total_water": {
+        "statistic": 24.282185093648316,
+        "p_value": 5.33568893375025e-06,
+        "stationary": false
+      },
+      "avg_u10": {
+        "statistic": 1.4972213283947617,
+        "p_value": 0.4730232846096082,
+        "stationary": true
+      },
+      "avg_v10": {
+        "statistic": 15.996522796004513,
+        "p_value": 0.00033604637119914055,
+        "stationary": false
+      },
+      "tobeijing": {
+        "statistic": 4.661637181100572,
+        "p_value": 0.09721613429996653,
+        "stationary": true
+      },
+      "totianjin": {
+        "statistic": 24.04531200524787,
+        "p_value": 6.006574115628089e-06,
+        "stationary": false
+      },
+      "toshijiazhuang": {
+        "statistic": 10.378504879670073,
+        "p_value": 0.005576173782589196,
+        "stationary": false
+      },
+      "totangshan": {
+        "statistic": 24.08451720443072,
+        "p_value": 5.889976193171227e-06,
+        "stationary": false
+      },
+      "toqinhuangdao": {
+        "statistic": 10.798476058851586,
+        "p_value": 0.004520023755881591,
+        "stationary": false
+      },
+      "tohandan": {
+        "statistic": 37.3275584417134,
+        "p_value": 7.841942849434133e-09,
+        "stationary": false
+      },
+      "toxingtai": {
+        "statistic": 59.415971877347715,
+        "p_value": 1.2530997356706565e-13,
+        "stationary": false
+      },
+      "tobaoding": {
+        "statistic": 1.0109848241208756,
+        "p_value": 0.6032084751570401,
+        "stationary": true
+      },
+      "tozhangjiakou": {
+        "statistic": 17.02979636290603,
+        "p_value": 0.00020045952910288146,
+        "stationary": false
+      },
+      "tochengde": {
+        "statistic": 8.679988481423898,
+        "p_value": 0.013036603284775052,
+        "stationary": false
+      },
+      "tocangzhou": {
+        "statistic": 11.378669882075334,
+        "p_value": 0.003381841345538523,
+        "stationary": false
+      },
+      "tolangfang": {
+        "statistic": 11.478739257262953,
+        "p_value": 0.0032167954120414133,
+        "stationary": false
+      },
+      "tohengshui": {
+        "statistic": 19.9533821263982,
+        "p_value": 4.647058327968586e-05,
+        "stationary": false
+      },
+      "煤炭占能源消费总量的比重 (%)": {
+        "statistic": 2535.432909041653,
+        "p_value": 0.0,
+        "stationary": false
+      },
+      "石油占能源消费总量的比重 (%)": {
+        "statistic": 2650.792222850431,
+        "p_value": 0.0,
+        "stationary": false
+      },
+      "天然气占能源消费总量的比重 (%)": {
+        "statistic": 1388.4353209576852,
+        "p_value": 3.1996377662747794e-302,
+        "stationary": false
+      },
+      "一次电力及其他能源占能源总量的比重 (%)": {
+        "statistic": 54.27175098203204,
+        "p_value": 1.6407371538651625e-12,
+        "stationary": false
+      },
+      "第二产业占比": {
+        "statistic": 10.62624856561211,
+        "p_value": 0.004926510835334781,
+        "stationary": false
+      },
+      "供气总量": {
+        "statistic": 150.78331255662775,
+        "p_value": 1.8105882464022882e-33,
+        "stationary": false
+      }
+    },
+    "note": "LLC/IPS检验用于验证数据平稳性"
+  },
+  "multicollinearity_test": {
+    "vif_results": {
+      "env_attention": {
+        "vif": 1.4908998546335062,
+        "high_multicollinearity": false
+      },
+      "total_water": {
+        "vif": 4.806871095571603,
+        "high_multicollinearity": false
+      },
+      "avg_u10": {
+        "vif": 7.61694217077055,
+        "high_multicollinearity": false
+      },
+      "avg_v10": {
+        "vif": 44.71398287658612,
+        "high_multicollinearity": true
+      },
+      "tobeijing": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "totianjin": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "toshijiazhuang": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "totangshan": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "toqinhuangdao": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tohandan": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "toxingtai": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tobaoding": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tozhangjiakou": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tochengde": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tocangzhou": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tolangfang": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "tohengshui": {
+        "vif": Infinity,
+        "high_multicollinearity": true
+      },
+      "煤炭占能源消费总量的比重 (%)": {
+        "vif": 45692.09097181533,
+        "high_multicollinearity": true
+      },
+      "石油占能源消费总量的比重 (%)": {
+        "vif": 1087.8768750286617,
+        "high_multicollinearity": true
+      },
+      "天然气占能源消费总量的比重 (%)": {
+        "vif": 3953.6404323407824,
+        "high_multicollinearity": true
+      },
+      "一次电力及其他能源占能源总量的比重 (%)": {
+        "vif": 16802.54847511383,
+        "high_multicollinearity": true
+      },
+      "第二产业占比": {
+        "vif": 14.892340102103942,
+        "high_multicollinearity": true
+      },
+      "供气总量": {
+        "vif": 14.61204408311686,
+        "high_multicollinearity": true
+      }
+    },
+    "threshold": 10,
+    "removed_variables": [
+      "avg_v10",
+      "tobeijing",
+      "totianjin",
+      "toshijiazhuang",
+      "totangshan",
+      "toqinhuangdao",
+      "tohandan",
+      "toxingtai",
+      "tobaoding",
+      "tozhangjiakou",
+      "tochengde",
+      "tocangzhou",
+      "tolangfang",
+      "tohengshui",
+      "煤炭占能源消费总量的比重 (%)",
+      "石油占能源消费总量的比重 (%)",
+      "天然气占能源消费总量的比重 (%)",
+      "一次电力及其他能源占能源总量的比重 (%)",
+      "第二产业占比",
+      "供气总量"
+    ]
+  },
+  "descriptive_statistics": {
+    "pm25": {
+      "count": 195,
+      "mean": 4.463665904133963e-16,
+      "std": 1.0,
+      "min": -1.899911568141296,
+      "q25": -0.7280069823189697,
+      "median": -0.2724278629339462,
+      "q75": 0.9154704579306205,
+      "max": 2.3544219530945933
+    },
+    "env_attention": {
+      "count": 195,
+      "mean": -5.465713352000771e-17,
+      "std": 1.0000000000000002,
+      "min": -2.8592266591518984,
+      "q25": -0.5833692604712688,
+      "median": -0.03498836588067434,
+      "q75": 0.5702250504012427,
+      "max": 2.5974658503028647
+    },
+    "total_water": {
+      "count": 195,
+      "mean": 5.124106267500723e-18,
+      "std": 1.0000000000000002,
+      "min": -1.84740236481677,
+      "q25": -0.6392381467723866,
+      "median": -0.26657544391262733,
+      "q75": 0.45408622188747777,
+      "max": 3.3208950806505135
+    },
+    "avg_u10": {
+      "count": 195,
+      "mean": -1.8219044506669236e-17,
+      "std": 1.0,
+      "min": -2.877252578831256,
+      "q25": -0.5141578743274515,
+      "median": -0.11138515808309378,
+      "q75": 0.4913193712873926,
+      "max": 2.3832429740019947
+    },
+    "avg_v10": {
+      "count": 195,
+      "mean": 0.0,
+      "std": 0.9999999999999996,
+      "min": -2.7146172798452146,
+      "q25": -0.5009780900243936,
+      "median": 0.09606788417981642,
+      "q75": 0.46721419302615,
+      "max": 1.9630715958811014
+    },
+    "tobeijing": {
+      "count": 195,
+      "mean": 0.0,
+      "std": 1.0000000000000007,
+      "min": -1.7742134080961551,
+      "q25": -0.49617288326157094,
+      "median": -0.16502793700709348,
+      "q75": 0.6247096609484936,
+      "max": 1.8987711643514156
+    },
+    "totianjin": {
+      "count": 195,
+      "mean": 1.8219044506669235e-16,
+      "std": 1.0000000000000002,
+      "min": -1.7678798977036885,
+      "q25": -0.7810750422518892,
+      "median": 0.1823975999501686,
+      "q75": 0.7385611305316229,
+      "max": 1.7433329588003192
+    },
+    "toshijiazhuang": {
+      "count": 195,
+      "mean": -1.0931426704001542e-16,
+      "std": 1.0000000000000002,
+      "min": -1.756565500423549,
+      "q25": -0.841744734997088,
+      "median": 0.09993453908578756,
+      "q75": 0.5437749670089046,
+      "max": 1.8562129094765494
+    },
+    "totangshan": {
+      "count": 195,
+      "mean": -2.9150471210670777e-16,
+      "std": 1.0000000000000009,
+      "min": -1.716522830861916,
+      "q25": -0.749694121387443,
+      "median": -0.2980388836058131,
+      "q75": 0.6144268093184792,
+      "max": 1.7775958896604789
+    },
+    "toqinhuangdao": {
+      "count": 195,
+      "mean": 2.004094895733616e-16,
+      "std": 1.0000000000000007,
+      "min": -1.970537185000961,
+      "q25": -0.5912327621901069,
+      "median": -0.12939460985871667,
+      "q75": 0.5981987610795527,
+      "max": 1.5827164499645323
+    },
+    "tohandan": {
+      "count": 195,
+      "mean": -3.643808901333847e-17,
+      "std": 0.9999999999999999,
+      "min": -1.7794150602282826,
+      "q25": -0.8697697044528626,
+      "median": 0.2665979062188837,
+      "q75": 0.826744125675081,
+      "max": 1.4526316698757167
+    },
+    "toxingtai": {
+      "count": 195,
+      "mean": 7.287617802667694e-17,
+      "std": 0.999999999999999,
+      "min": -1.6741970803153634,
+      "q25": -0.9152853582696735,
+      "median": 0.26561003020296287,
+      "q75": 0.788757274165756,
+      "max": 1.5471504127331086
+    },
+    "tobaoding": {
+      "count": 195,
+      "mean": -2.9150471210670777e-16,
+      "std": 0.9999999999999993,
+      "min": -1.9933082803731317,
+      "q25": -0.6355938414769609,
+      "median": -0.3839649743632624,
+      "q75": 0.6502523064905612,
+      "max": 1.9635374231010232
+    },
+    "tozhangjiakou": {
+      "count": 195,
+      "mean": -3.643808901333847e-16,
+      "std": 1.0000000000000009,
+      "min": -2.42446801137118,
+      "q25": -0.5411303634905942,
+      "median": 0.19455513950945696,
+      "q75": 0.5402807049850868,
+      "max": 1.5376489890718428
+    },
+    "tochengde": {
+      "count": 195,
+      "mean": -2.550666230933693e-16,
+      "std": 1.0000000000000009,
+      "min": -1.8446487496420834,
+      "q25": -0.6735476855210862,
+      "median": -0.19699070391529494,
+      "q75": 0.7779165737798971,
+      "max": 1.8017846594753744
+    },
+    "tocangzhou": {
+      "count": 195,
+      "mean": 1.7308092281335774e-16,
+      "std": 1.0,
+      "min": -2.0822236637900797,
+      "q25": -0.6446999613988456,
+      "median": -0.05156876456811165,
+      "q75": 0.9092983840508034,
+      "max": 1.4145378366532682
+    },
+    "tolangfang": {
+      "count": 195,
+      "mean": -7.287617802667694e-17,
+      "std": 1.0000000000000016,
+      "min": -1.6956087273801408,
+      "q25": -0.48668293595220896,
+      "median": 0.11435576660602105,
+      "q75": 0.658604400237981,
+      "max": 1.8519306733879812
+    },
+    "tohengshui": {
+      "count": 195,
+      "mean": 2.004094895733616e-16,
+      "std": 0.9999999999999991,
+      "min": -1.77110434227362,
+      "q25": -0.7176048536364154,
+      "median": -0.09711399081091956,
+      "q75": 0.7301192947675775,
+      "max": 1.6706209426046403
+    },
+    "煤炭占能源消费总量的比重 (%)": {
+      "count": 195,
+      "mean": 1.047595059133481e-16,
+      "std": 1.0000000000000013,
+      "min": -1.6033794392885141,
+      "q25": -1.057269276043107,
+      "median": 0.013106643917890265,
+      "q75": 1.1490157834683359,
+      "max": 1.1490157834683359
+    },
+    "石油占能源消费总量的比重 (%)": {
+      "count": 195,
+      "mean": -6.80481312324096e-15,
+      "std": 0.9999999999999992,
+      "min": -1.3443144677771686,
+      "q25": -1.3443144677771686,
+      "median": 0.2400561549601992,
+      "q75": 0.9602246198408223,
+      "max": 1.104258312816949
+    },
+    "天然气占能源消费总量的比重 (%)": {
+      "count": 195,
+      "mean": 2.7328566760003855e-16,
+      "std": 1.0000000000000007,
+      "min": -1.0744766936856505,
+      "q25": -1.0744766936856505,
+      "median": -0.09080084735371635,
+      "q75": 1.0442097445677454,
+      "max": 1.3468792357468022
+    },
+    "一次电力及其他能源占能源总量的比重 (%)": {
+      "count": 195,
+      "mean": 3.188332788667116e-16,
+      "std": 0.999999999999999,
+      "min": -1.0387235783931192,
+      "q25": -1.0387235783931192,
+      "median": -0.21490832656409362,
+      "q75": 0.8954513606837239,
+      "max": 2.005811047931542
+    },
+    "第二产业占比": {
+      "count": 195,
+      "mean": 6.604403633667598e-16,
+      "std": 1.0000000000000009,
+      "min": -2.6070552342339126,
+      "q25": -0.6887033187910019,
+      "median": 0.06400676544199145,
+      "q75": 0.8744695415598697,
+      "max": 1.9351939825122473
+    },
+    "供气总量": {
+      "count": 195,
+      "mean": 0.0,
+      "std": 1.0000000000000004,
+      "min": -0.42109300737547417,
+      "q25": -0.3976110487191415,
+      "median": -0.3590233952409859,
+      "q75": -0.2518320855890016,
+      "max": 4.451832981281504
+    }
+  }
+}

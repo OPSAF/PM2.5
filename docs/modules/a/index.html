@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM2.5 面板数据处理模块</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; }
+        .header { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); padding: 30px 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .header h1 { font-size: 2.5rem; font-weight: 300; letter-spacing: 3px; background: linear-gradient(90deg, #00d9ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-tabs { background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 0 20px; display: flex; justify-content: center; flex-wrap: wrap; position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(10px); }
+        .nav-tabs .nav-link { color: rgba(255,255,255,0.7); border: none; padding: 15px 25px; font-size: 0.9rem; transition: all 0.3s ease; }
+        .nav-tabs .nav-link:hover { color: #00d9ff; background: rgba(0,217,255,0.1); }
+        .nav-tabs .nav-link.active { color: #00d9ff; background: transparent; border-bottom: 3px solid #00d9ff; }
+        .tab-content { padding: 40px 20px; }
+        .glass-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; margin-bottom: 30px; }
+        .card-title-custom { color: #00d9ff; font-size: 1.3rem; font-weight: 600; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid rgba(0,217,255,0.3); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, rgba(0,217,255,0.2) 0%, rgba(0,255,136,0.2) 100%); border-radius: 15px; padding: 25px; text-align: center; border: 1px solid rgba(0,217,255,0.3); }
+        .stat-card.purple { background: linear-gradient(135deg, rgba(155,89,182,0.2) 0%, rgba(142,68,173,0.2) 100%); border: 1px solid rgba(155,89,182,0.3); }
+        .stat-value { font-size: 2.5rem; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(0,217,255,0.5); }
+        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table-custom thead th { background: linear-gradient(135deg, rgba(0,217,255,0.3) 0%, rgba(0,255,136,0.3) 100%); color: #fff; padding: 15px; text-align: center; font-weight: 600; border: none; }
+        .table-custom tbody td { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.9); padding: 12px 15px; text-align: center; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .positive { color: #ff6b6b !important; }
+        .negative { color: #00ff88 !important; }
+        .chart-container { position: relative; height: 400px; margin: 20px 0; }
+        .method-box { background: rgba(0,0,0,0.3); border-radius: 15px; padding: 20px; margin: 15px 0; }
+        .method-title { color: #00d9ff; font-size: 1.1rem; margin-bottom: 10px; }
+        .variable-tag { display: inline-block; background: rgba(0,217,255,0.2); border: 1px solid rgba(0,217,255,0.4); border-radius: 20px; padding: 5px 15px; margin: 5px; font-size: 0.85rem; }
+        .vif-high { background: rgba(255,107,107,0.3) !important; border-color: rgba(255,107,107,0.5) !important; }
+        .vif-ok { background: rgba(0,255,136,0.2) !important; border-color: rgba(0,255,136,0.4) !important; }
+        @media (max-width: 768px) { .header h1 { font-size: 1.8rem; } .stat-value { font-size: 2rem; } .chart-container { height: 300px; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PM2.5 面板数据处理模块</h1>
+        <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">2010-2024年京津冀13市平衡面板数据处理与检验</p>
+    </div>
+    
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item"><button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">数据概览</button></li>
+        <li class="nav-item"><button class="nav-link" id="missing-tab" data-bs-toggle="tab" data-bs-target="#missing" type="button">缺失值处理</button></li>
+        <li class="nav-item"><button class="nav-link" id="outlier-tab" data-bs-toggle="tab" data-bs-target="#outlier" type="button">异常值处理</button></li>
+        <li class="nav-item"><button class="nav-link" id="standardize-tab" data-bs-toggle="tab" data-bs-target="#standardize" type="button">标准化处理</button></li>
+        <li class="nav-item"><button class="nav-link" id="stationarity-tab" data-bs-toggle="tab" data-bs-target="#stationarity" type="button">平稳性检验</button></li>
+        <li class="nav-item"><button class="nav-link" id="vif-tab" data-bs-toggle="tab" data-bs-target="#vif" type="button">共线性检验</button></li>
+        <li class="nav-item"><button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button">描述性统计</button></li>
+    </ul>
+    
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="overview">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">数据基本信息</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">2010-2024</div>
+                            <div class="stat-label">时间维度</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-value">13</div>
+                            <div class="stat-label">城市数量</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">195</div>
+                            <div class="stat-label">观测值总数</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-value">24</div>
+                            <div class="stat-label">变量数量</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">变量说明</h3>
+                    <div class="method-box">
+                        <div class="method-title">被解释变量</div>
+                        <span class="variable-tag" style="background: rgba(255,107,107,0.3); border-color: rgba(255,107,107,0.5);">pm25 - PM2.5浓度</span>
+                    </div>
+                    <div class="method-box">
+                        <div class="method-title">解释变量</div>
+                        <span class="variable-tag">env_attention - 环境关注度</span>
+                        <span class="variable-tag">total_water - 总水量</span>
+                        <span class="variable-tag">avg_u10 - 东向风速分量</span>
+                        <span class="variable-tag">avg_v10 - 北向风速分量</span>
+                        <span class="variable-tag">煤炭占能源消费总量的比重</span>
+                        <span class="variable-tag">石油占能源消费总量的比重</span>
+                        <span class="variable-tag">天然气占能源消费总量的比重</span>
+                        <span class="variable-tag">一次电力及其他能源占能源总量的比重</span>
+                        <span class="variable-tag">第二产业占比</span>
+                        <span class="variable-tag">供气总量</span>
+                    </div>
+                    <div class="method-box">
+                        <div class="method-title">空间距离变量（to开头）</div>
+                        <span class="variable-tag">tobeijing - 到北京的距离</span>
+                        <span class="variable-tag">totianjin - 到天津的距离</span>
+                        <span class="variable-tag">toshijiazhuang - 到石家庄的距离</span>
+                        <span class="variable-tag">totangshan - 到唐山的距离</span>
+                        <span class="variable-tag">toqinhuangdao - 到秦皇岛的距离</span>
+                        <span class="variable-tag">tohandan - 到邯郸的距离</span>
+                        <span class="variable-tag">toxingtai - 到邢台的距离</span>
+                        <span class="variable-tag">tobaoding - 到保定的距离</span>
+                        <span class="variable-tag">tozhangjiakou - 到张家口的距离</span>
+                        <span class="variable-tag">tochengde - 到承德的距离</span>
+                        <span class="variable-tag">tocangzhou - 到沧州的距离</span>
+                        <span class="variable-tag">tolangfang - 到廊坊的距离</span>
+                        <span class="variable-tag">tohengshui - 到衡水的距离</span>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">城市列表</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">北京</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">天津</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">保定</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">唐山</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">廊坊</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">张家口</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">承德</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">沧州</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">石家庄</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">秦皇岛</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">衡水</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">邢台</div>
+                        <div style="background: rgba(0,217,255,0.1); padding: 15px; border-radius: 10px; text-align: center;">邯郸</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="missing">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">缺失值处理方法</h3>
+                    <div class="method-box">
+                        <div class="method-title">处理策略</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
+                            1. <strong style="color: #00d9ff;">少量缺失值（&lt;3年连续）</strong>：使用线性插值法（linear interpolation）填充<br>
+                            2. <strong style="color: #ff6b6b;">连续3年及以上缺失</strong>：直接剔除该指标<br>
+                            3. <strong style="color: #00ff88;">边界年份缺失</strong>：同时向前向后插值（limit_direction='both'）
+                        </p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">52</div>
+                            <div class="stat-label">2010-2013年缺失数</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">插值后缺失数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">剔除变量数</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">处理前后对比</h3>
+                    <div class="chart-container"><canvas id="missingCompareChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="outlier">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">异常值处理方法</h3>
+                    <div class="method-box">
+                        <div class="method-title">3σ原则缩尾处理（Winsorization）</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
+                            对于超出 [μ-3σ, μ+3σ] 范围的极端值，进行缩尾处理：<br>
+                            <strong>下限</strong> = μ - 3σ → <strong>上限</strong> = μ + 3σ<br>
+                            <span style="color: #00d9ff;">σ = 1% 水平（对应3σ覆盖约99.7%数据）</span>
+                        </p>
+                    </div>
+                    <div class="method-box">
+                        <div class="method-title">处理步骤</div>
+                        <p style="color: rgba(255,255,255,0.8);">
+                            1. 按年份分组计算各变量的均值和标准差<br>
+                            2. 确定每年度的上下限<br>
+                            3. 将超出范围的数值替换为边界值
+                        </p>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">异常值检测结果示例（pm25）</h3>
+                    <div class="chart-container"><canvas id="outlierChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="standardize">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">标准化处理方法</h3>
+                    <div class="method-box">
+                        <div class="method-title">Z-score 标准化</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8; text-align: center; font-size: 1.2rem;">
+                            Z = (X - μ) / σ
+                        </p>
+                        <p style="color: rgba(255,255,255,0.7); margin-top: 15px;">
+                            转换后变量均值为0，标准差为1，消除量纲差异，保证SHAP值横向可比
+                        </p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">≈0</div>
+                            <div class="stat-label">标准化后均值</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-value">1</div>
+                            <div class="stat-label">标准化后标准差</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">24</div>
+                            <div class="stat-label">处理变量数</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">标准化前后对比（pm25）</h3>
+                    <div class="chart-container"><canvas id="standardizeChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="stationarity">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">平稳性检验方法</h3>
+                    <div class="method-box">
+                        <div class="method-title">LLC检验（Levin-Lin-Chu）</div>
+                        <p style="color: rgba(255,255,255,0.8);">H0: 存在单位根（非平稳）→ p值 &lt; 0.05 则拒绝H0，认为平稳</p>
+                    </div>
+                    <div class="method-box">
+                        <div class="method-title">IPS检验（Im-Pesaran-Skin）</div>
+                        <p style="color: rgba(255,255,255,0.8);">H0: 存在单位根（非平稳）→ p值 &lt; 0.05 则拒绝H0，认为平稳</p>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">检验结果</h3>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead><tr><th>变量</th><th>LLC统计量</th><th>LLC p值</th><th>LLC平稳</th><th>IPS统计量</th><th>IPS p值</th><th>IPS平稳</th></tr></thead>
+                            <tbody id="stationarity-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">主要变量平稳性对比</h3>
+                    <div class="chart-container"><canvas id="stationarityChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="vif">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">多重共线性检验</h3>
+                    <div class="method-box">
+                        <div class="method-title">VIF检验（方差膨胀因子）</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
+                            VIF = 1 / (1 - R²)<br>
+                            <strong style="color: #00ff88;">VIF &lt; 10</strong>：无严重共线性<br>
+                            <strong style="color: #ff6b6b;">VIF ≥ 10</strong>：存在严重共线性，需剔除
+                        </p>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">VIF检验结果</h3>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead><tr><th>变量</th><th>VIF值</th><th>共线性状态</th></tr></thead>
+                            <tbody id="vif-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">VIF值可视化</h3>
+                    <div class="chart-container"><canvas id="vifChart"></canvas></div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">高共线性变量说明</h3>
+                    <div class="method-box">
+                        <div class="method-title">距离变量（to开头）</div>
+                        <p style="color: rgba(255,255,255,0.8);">各城市之间的距离是固定值（地理距离不随时间变化），因此存在完美的线性关系，VIF为无穷大</p>
+                    </div>
+                    <div class="method-box">
+                        <div class="method-title">能源结构变量</div>
+                        <p style="color: rgba(255,255,255,0.8);">煤炭、石油、天然气、电力等占比之和恒等于100%，存在严重共线性</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="stats">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">描述性统计</h3>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead><tr><th>变量</th><th>观测数</th><th>均值</th><th>标准差</th><th>最小值</th><th>25%分位</th><th>中位数</th><th>75%分位</th><th>最大值</th></tr></thead>
+                            <tbody id="stats-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">主要变量分布</h3>
+                    <div class="chart-container"><canvas id="distributionChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const processingResults = {
+            "data_info": {
+                "time_dimension": "2010-2024",
+                "spatial_dimension": "京津冀13个地级市",
+                "cities": ["北京", "天津", "保定", "唐山", "廊坊", "张家口", "承德", "沧州", "石家庄", "秦皇岛", "衡水", "邢台", "邯郸"],
+                "total_observations": 195,
+                "variables": ["year", "city", "Unnamed: 0", "env_attention", "total_water", "avg_u10", "avg_v10", "tobeijing", "totianjin", "toshijiazhuang", "totangshan", "toqinhuangdao", "tohandan", "toxingtai", "tobaoding", "tozhangjiakou", "tochengde", "tocangzhou", "tolangfang", "tohengshui", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "pm25", "第二产业占比", "供气总量"],
+                "dependent_variable": "pm25",
+                "independent_variables": ["env_attention", "total_water", "avg_u10", "avg_v10", "tobeijing", "totianjin", "toshijiazhuang", "totangshan", "toqinhuangdao", "tohandan", "toxingtai", "tobaoding", "tozhangjiakou", "tochengde", "tocangzhou", "tolangfang", "tohengshui", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "第二产业占比", "供气总量"]
+            },
+            "descriptive_statistics": {
+                "pm25": {"count": 195, "mean": 4.46e-16, "std": 1.0, "min": -1.90, "q25": -0.73, "median": -0.27, "q75": 0.92, "max": 2.35},
+                "env_attention": {"count": 195, "mean": -5.47e-17, "std": 1.0, "min": -2.86, "q25": -0.58, "median": -0.03, "q75": 0.57, "max": 2.60},
+                "total_water": {"count": 195, "mean": 5.12e-18, "std": 1.0, "min": -1.85, "q25": -0.64, "median": -0.27, "q75": 0.45, "max": 3.32},
+                "avg_u10": {"count": 195, "mean": -1.82e-17, "std": 1.0, "min": -2.88, "q25": -0.51, "median": -0.11, "q75": 0.49, "max": 2.38},
+                "avg_v10": {"count": 195, "mean": 0.0, "std": 1.0, "min": -2.71, "q25": -0.50, "median": 0.10, "q75": 0.47, "max": 1.96},
+                "煤炭占能源消费总量的比重 (%)": {"count": 195, "mean": 1.05e-16, "std": 1.0, "min": -1.60, "q25": -1.06, "median": 0.01, "q75": 1.15, "max": 1.15},
+                "石油占能源消费总量的比重 (%)": {"count": 195, "mean": -6.80e-15, "std": 1.0, "min": -1.34, "q25": -1.34, "median": 0.24, "q75": 0.96, "max": 1.10},
+                "天然气占能源消费总量的比重 (%)": {"count": 195, "mean": 2.73e-16, "std": 1.0, "min": -1.07, "q25": -1.07, "median": -0.09, "q75": 1.04, "max": 1.35},
+                "一次电力及其他能源占能源总量的比重 (%)": {"count": 195, "mean": 3.19e-16, "std": 1.0, "min": -1.04, "q25": -1.04, "median": -0.21, "q75": 0.90, "max": 2.01},
+                "第二产业占比": {"count": 195, "mean": 6.60e-16, "std": 1.0, "min": -2.61, "q25": -0.69, "median": 0.06, "q75": 0.87, "max": 1.94},
+                "供气总量": {"count": 195, "mean": 0.0, "std": 1.0, "min": -0.42, "q25": -0.40, "median": -0.36, "q75": -0.25, "max": 4.45}
+            },
+            "stationarity_test": {
+                "llc_test": {
+                    "pm25": {"statistic": 6.23e-15, "p_value": 1.0, "stationary": true},
+                    "env_attention": {"statistic": -7.63e-16, "p_value": 1.0, "stationary": true},
+                    "total_water": {"statistic": 7.16e-17, "p_value": 1.0, "stationary": true},
+                    "avg_u10": {"statistic": -2.54e-16, "p_value": 1.0, "stationary": true},
+                    "avg_v10": {"statistic": 0.0, "p_value": 1.0, "stationary": true}
+                },
+                "ips_test": {
+                    "pm25": {"statistic": 38.16, "p_value": 5.17e-09, "stationary": false},
+                    "env_attention": {"statistic": 6.72, "p_value": 0.035, "stationary": false},
+                    "total_water": {"statistic": 24.28, "p_value": 5.34e-06, "stationary": false},
+                    "avg_u10": {"statistic": 1.50, "p_value": 0.473, "stationary": true},
+                    "avg_v10": {"statistic": 16.00, "p_value": 0.00034, "stationary": false}
+                }
+            },
+            "multicollinearity_test": {
+                "vif_results": {
+                    "env_attention": {"vif": 1.49, "high_multicollinearity": false},
+                    "total_water": {"vif": 4.81, "high_multicollinearity": false},
+                    "avg_u10": {"vif": 7.62, "high_multicollinearity": false},
+                    "avg_v10": {"vif": 44.71, "high_multicollinearity": true},
+                    "tobeijing": {"vif": Infinity, "high_multicollinearity": true},
+                    "totianjin": {"vif": Infinity, "high_multicollinearity": true},
+                    "煤炭占能源消费总量的比重 (%)": {"vif": 45692.09, "high_multicollinearity": true},
+                    "石油占能源消费总量的比重 (%)": {"vif": 1087.88, "high_multicollinearity": true},
+                    "天然气占能源消费总量的比重 (%)": {"vif": 3953.64, "high_multicollinearity": true},
+                    "一次电力及其他能源占能源总量的比重 (%)": {"vif": 16802.55, "high_multicollinearity": true},
+                    "第二产业占比": {"vif": 14.89, "high_multicollinearity": true},
+                    "供气总量": {"vif": 14.61, "high_multicollinearity": true}
+                },
+                "threshold": 10
+            }
+        };
+
+        function buildStationarityTable() {
+            const tbody = document.getElementById('stationarity-table');
+            const llcTest = processingResults.stationarity_test.llc_test;
+            const ipsTest = processingResults.stationarity_test.ips_test;
+            
+            for (const [varName, result] of Object.entries(llcTest)) {
+                const ipsResult = ipsTest[varName] || {};
+                const llcClass = result.stationary ? 'negative' : 'positive';
+                const ipsClass = ipsResult.stationary ? 'negative' : 'positive';
+                tbody.innerHTML += `<tr>
+                    <td>${varName}</td>
+                    <td>${result.statistic.toExponential(2)}</td>
+                    <td>${result.p_value.toFixed(4)}</td>
+                    <td class="${llcClass}">${result.stationary ? '平稳' : '非平稳'}</td>
+                    <td>${ipsResult.statistic ? ipsResult.statistic.toFixed(2) : '-'}</td>
+                    <td>${ipsResult.p_value ? ipsResult.p_value.toFixed(4) : '-'}</td>
+                    <td class="${ipsClass}">${ipsResult.stationary ? '平稳' : '非平稳'}</td>
+                </tr>`;
+            }
+        }
+
+        function buildVIFTable() {
+            const tbody = document.getElementById('vif-table');
+            const vifResults = processingResults.multicollinearity_test.vif_results;
+            
+            for (const [varName, result] of Object.entries(vifResults)) {
+                const vifClass = result.high_multicollinearity ? 'vif-high' : 'vif-ok';
+                const vifDisplay = result.vif === Infinity ? '∞' : result.vif.toFixed(2);
+                const status = result.high_multicollinearity ? '严重共线性' : '正常';
+                tbody.innerHTML += `<tr class="${vifClass}">
+                    <td>${varName}</td>
+                    <td>${vifDisplay}</td>
+                    <td>${status}</td>
+                </tr>`;
+            }
+        }
+
+        function buildStatsTable() {
+            const tbody = document.getElementById('stats-table');
+            const stats = processingResults.descriptive_statistics;
+            
+            for (const [varName, result] of Object.entries(stats)) {
+                tbody.innerHTML += `<tr>
+                    <td>${varName}</td>
+                    <td>${result.count}</td>
+                    <td>${result.mean.toExponential(2)}</td>
+                    <td>${result.std.toFixed(4)}</td>
+                    <td>${result.min.toFixed(2)}</td>
+                    <td>${result.q25.toFixed(2)}</td>
+                    <td>${result.median.toFixed(2)}</td>
+                    <td>${result.q75.toFixed(2)}</td>
+                    <td>${result.max.toFixed(2)}</td>
+                </tr>`;
+            }
+        }
+
+        function initCharts() {
+            const missingLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10', 'avg_v10'];
+            const missingBefore = [52, 52, 52, 52, 52];
+            const missingAfter = [0, 0, 0, 0, 0];
+
+            new Chart(document.getElementById('missingCompareChart'), {
+                type: 'bar',
+                data: {
+                    labels: missingLabels,
+                    datasets: [
+                        { label: '处理前缺失', data: missingBefore, backgroundColor: 'rgba(255,107,107,0.7)', borderWidth: 1 },
+                        { label: '处理后缺失', data: missingAfter, backgroundColor: 'rgba(0,255,136,0.7)', borderWidth: 1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+
+            const outlierLabels = ['< -2σ', '-2σ to -1σ', '-1σ to 0', '0 to 1σ', '1σ to 2σ', '> 2σ'];
+            const outlierData = [3, 27, 70, 75, 18, 2];
+
+            new Chart(document.getElementById('outlierChart'), {
+                type: 'bar',
+                data: { labels: outlierLabels, datasets: [{ data: outlierData, backgroundColor: ['rgba(255,107,107,0.7)', 'rgba(255,183,107,0.7)', 'rgba(46,204,113,0.7)', 'rgba(46,204,113,0.7)', 'rgba(255,183,107,0.7)', 'rgba(255,107,107,0.7)'], borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+
+            const standardizeLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10'];
+            const beforeStd = [45.2, 0.48, 18.5, 0.12];
+            const afterStd = [1.0, 1.0, 1.0, 1.0];
+
+            new Chart(document.getElementById('standardizeChart'), {
+                type: 'bar',
+                data: {
+                    labels: standardizeLabels,
+                    datasets: [
+                        { label: '标准化前标准差', data: beforeStd, backgroundColor: 'rgba(155,89,182,0.7)', borderWidth: 1 },
+                        { label: '标准化后标准差', data: afterStd, backgroundColor: 'rgba(0,217,255,0.7)', borderWidth: 1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+
+            const stationarityLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10', 'avg_v10'];
+            const llcPValues = [1.0, 1.0, 1.0, 1.0, 1.0];
+            const ipsPValues = [5.17e-09, 0.035, 5.34e-06, 0.473, 0.00034];
+
+            new Chart(document.getElementById('stationarityChart'), {
+                type: 'bar',
+                data: {
+                    labels: stationarityLabels,
+                    datasets: [
+                        { label: 'LLC p值', data: llcPValues, backgroundColor: 'rgba(0,217,255,0.7)', borderWidth: 1 },
+                        { label: 'IPS p值', data: ipsPValues.map(v => Math.min(v, 1)), backgroundColor: 'rgba(155,89,182,0.7)', borderWidth: 1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' }, title: { display: true, text: 'p值 (越大越可能平稳)', color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+
+            const vifLabels = ['env_attention', 'total_water', 'avg_u10', 'avg_v10', '第二产业占比', '供气总量'];
+            const vifValues = [1.49, 4.81, 7.62, 44.71, 14.89, 14.61];
+
+            new Chart(document.getElementById('vifChart'), {
+                type: 'bar',
+                data: {
+                    labels: vifLabels,
+                    datasets: [{
+                        data: vifValues,
+                        backgroundColor: vifValues.map(v => v > 10 ? 'rgba(255,107,107,0.7)' : 'rgba(0,255,136,0.7)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.1)' }, 
+                            ticks: { color: 'rgba(255,255,255,0.7)' },
+                            title: { display: true, text: 'VIF值 (红色: >10 严重共线性)', color: 'rgba(255,107,107,0.9)' }
+                        }, 
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } 
+                    } 
+                }
+            });
+
+            const distLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10', 'avg_v10', '第二产业占比'];
+            const distMeans = [0, 0, 0, 0, 0, 0];
+            const distStds = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+
+            new Chart(document.getElementById('distributionChart'), {
+                type: 'bar',
+                data: {
+                    labels: distLabels,
+                    datasets: [
+                        { label: '均值', data: distMeans, backgroundColor: 'rgba(0,217,255,0.7)', borderWidth: 1 },
+                        { label: '标准差', data: distStds, backgroundColor: 'rgba(155,89,182,0.7)', borderWidth: 1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+            });
+        }
+
+        buildStationarityTable();
+        buildVIFTable();
+        buildStatsTable();
+        initCharts();
+    </script>
+</body>
+</html>
