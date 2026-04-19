@@ -8,7 +8,7 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-df = pd.read_csv('data/maybe_a_end_data.csv')
+df = pd.read_csv('data\maybe_a_end_data.csv')
 
 column_mapping = {
     'env_attention': '环境关注度',
@@ -68,8 +68,8 @@ iv_vars = ['环境关注度', '总用水量', '平均风速u10', '平均风速v1
            '石油占比', '天然气占比', '电力及其他能源占比',
            '供气总量', '工业二氧化硫排放', '第二产业占比', '工业氮氧化物排放']
 try:
-    iv_formula = 'PM25 ~ ' + ' + '.join(iv_vars) + ' + C(city) + C(year)'
-    iv_model = smf.ols(iv_formula, data=df).fit(cov_type='cluster', cov_kwds={'groups': df['city']})
+    iv_formula = 'PM25 ~ ' + ' + '.join(iv_vars) + ' + C(city) + C(year)'  # 包含城市和年份固定效应
+    iv_model = smf.ols(iv_formula, data=df).fit(cov_type='cluster', cov_kwds={'groups': df['city']}) 
     results['iv'] = {
         'coefficients': {k: float(v) for k, v in iv_model.params.items()},
         'p_values': {k: float(v) for k, v in iv_model.pvalues.items()},
@@ -87,30 +87,33 @@ try:
     city_idx = {city: i for i, city in enumerate(cities)}
 
     W = np.zeros((num_cities, num_cities))
-    city_distances = {
-        '北京': {'天津': 1, '廊坊': 1, '唐山': 0.5, '保定': 0.5},
-        '天津': {'北京': 1, '唐山': 1, '廊坊': 1},
-        '廊坊': {'北京': 1, '天津': 1, '沧州': 1},
-        '唐山': {'北京': 0.5, '天津': 1, '秦皇岛': 1},
-        '秦皇岛': {'唐山': 1, '承德': 1},
-        '沧州': {'廊坊': 1, '衡水': 1, '滨州': 1},
-        '衡水': {'沧州': 1, '石家庄': 1, '邢台': 1},
-        '石家庄': {'衡水': 1, '邢台': 1, '保定': 1},
-        '邢台': {'石家庄': 1, '衡水': 1, '邯郸': 1},
-        '邯郸': {'邢台': 1, '安阳': 1},
-        '保定': {'石家庄': 1, '张家口': 1, '北京': 0.5},
-        '张家口': {'保定': 1, '承德': 1},
-        '承德': {'张家口': 1, '秦皇岛': 1}
+    
+    city_name_mapping = {
+        '北京': 'tobeijing',
+        '天津': 'totianjin', 
+        '石家庄': 'toshijiazhuang',
+        '唐山': 'totangshan',
+        '秦皇岛': 'toqinhuangdao',
+        '邯郸': 'tohandan',
+        '邢台': 'toxingtai',
+        '保定': 'tobaoding',
+        '张家口': 'tozhangjiakou',
+        '承德': 'tochengde',
+        '沧州': 'tocangzhou',
+        '廊坊': 'tolangfang',
+        '衡水': 'tohengshui'
     }
-
-    for city, neighbors in city_distances.items():
-        if city in city_idx:
-            i = city_idx[city]
-            for neighbor, weight in neighbors.items():
-                if neighbor in city_idx:
-                    j = city_idx[neighbor]
-                    W[i, j] = weight
-
+    
+    for i, city in enumerate(cities):
+        if city in city_name_mapping:
+            for j, neighbor in enumerate(cities):
+                if i != j and neighbor in city_name_mapping:
+                    neighbor_col = city_name_mapping[neighbor]
+                    if neighbor_col in df.columns:
+                        distance = df[df['city'] == city][neighbor_col].iloc[0]
+                        if distance > 0:
+                            W[i, j] = 1 / (distance ** 2)
+    
     row_sums = W.sum(axis=1)
     for i in range(num_cities):
         if row_sums[i] > 0:
@@ -228,14 +231,7 @@ for var in independent_vars:
         }
 results['extended_analysis']['sensitivity'] = sensitivity
 
-seasons = {'春季': [3, 4, 5], '夏季': [6, 7, 8], '秋季': [9, 10, 11], '冬季': [12, 1, 2]}
-season_effects = {}
-for season, months in seasons.items():
-    season_effects[season] = {
-        'pm25_mean': float(np.random.normal(50, 10)),
-        'pm25_std': float(np.random.normal(15, 5))
-    }
-results['extended_analysis']['season_effects'] = season_effects
+results['extended_analysis']['season_effects'] = {}
 
 policy_year = 2017
 before_policy = df[df['year'] < policy_year]['PM25'].mean()
@@ -251,10 +247,17 @@ results['extended_analysis']['policy_effect'] = {
 years = df['year'].unique()
 emission_intensity = {}
 for year in years:
-    emission_intensity[str(year)] = {
-        '二氧化硫排放强度': float(np.random.normal(0.05, 0.01)),
-        '氮氧化物排放强度': float(np.random.normal(0.04, 0.008))
-    }
+    year_data = df[df['year'] == year]
+    if not year_data.empty:
+        emission_intensity[str(year)] = {
+            '二氧化硫排放强度': float(year_data['工业二氧化硫排放'].mean() / year_data['工业二氧化硫排放'].mean() if year_data['工业二氧化硫排放'].mean() > 0 else 0),
+            '氮氧化物排放强度': float(year_data['工业氮氧化物排放'].mean() / year_data['工业氮氧化物排放'].mean() if year_data['工业氮氧化物排放'].mean() > 0 else 0)
+        }
+    else:
+        emission_intensity[str(year)] = {
+            '二氧化硫排放强度': 0,
+            '氮氧化物排放强度': 0
+        }
 results['extended_analysis']['emission_intensity'] = emission_intensity
 
 print("保存结果到CSV和JSON...")

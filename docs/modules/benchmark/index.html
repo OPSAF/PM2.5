@@ -68,7 +68,7 @@
                         <div class="stat-label">IV回归 R²</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">0.9084</div>
+                        <div class="stat-value">0.9112</div>
                         <div class="stat-label">SDM回归 R²</div>
                     </div>
                     <div class="stat-card purple">
@@ -179,7 +179,7 @@
                     <div class="conclusion-item"><h5 style="color: #00d9ff;">显著驱动因素</h5><p>天然气占比、电力及其他能源占比、石油占比对PM2.5浓度有显著影响</p></div>
                     <div class="conclusion-item" style="border-left-color: #ff6b6b;"><h5 style="color: #ff6b6b;">正向影响因素</h5><p>石油占比上升会导致PM2.5浓度上升</p></div>
                     <div class="conclusion-item" style="border-left-color: #00ff88;"><h5 style="color: #00ff88;">负向影响因素</h5><p>天然气占比、电力及其他能源占比有助于降低PM2.5浓度</p></div>
-                    <div class="conclusion-item"><h5 style="color: #a78bfa;">空间溢出效应</h5><p>相邻地区的污染排放对本地PM2.5浓度存在显著影响</p></div>
+                    <div class="conclusion-item"><h5 style="color: #a78bfa;">空间溢出效应</h5><p>相邻地区的污染排放对本地PM2.5浓度存在显著影响，SDM模型R²达到0.9112，优于基准模型</p></div>
                 </div>
             </div>
         </div>
@@ -189,37 +189,121 @@
     <script>
         const benchmarkData = {
             coefficients: {
-                '环境关注度': 8.688, '总用水量': 0.041, '平均风速u10': 10.383, '平均风速v10': 11.323,
-                '煤炭占比': 0.366, '石油占比': 3.848, '天然气占比': -6.168, '电力及其他能源占比': -0.790,
-                '供气总量': 0.000, '工业二氧化硫排放': -0.000, '第二产业占比': 0.293, '工业氮氧化物排放': 0.001
+                '环境关注度': 8.688,
+                '总用水量': 0.041,
+                '平均风速u10': 10.383,
+                '平均风速v10': 11.323,
+                '煤炭占比': 0.366,
+                '石油占比': 3.848,
+                '天然气占比': -6.168,
+                '电力及其他能源占比': -0.790,
+                '供气总量': 0.000,
+                '工业二氧化硫排放': -0.000,
+                '第二产业占比': 0.293,
+                '工业氮氧化物排放': 0.001
             },
             p_values: {
-                '环境关注度': 0.231, '总用水量': 0.881, '平均风速u10': 0.311, '平均风速v10': 0.349,
-                '煤炭占比': 0.522, '石油占比': 0.050, '天然气占比': 0.002, '电力及其他能源占比': 0.048,
-                '供气总量': 0.565, '工业二氧化硫排放': 0.145, '第二产业占比': 0.519, '工业氮氧化物排放': 0.175
+                '环境关注度': 0.231,
+                '总用水量': 0.881,
+                '平均风速u10': 0.311,
+                '平均风速v10': 0.349,
+                '煤炭占比': 0.522,
+                '石油占比': 0.050,
+                '天然气占比': 0.002,
+                '电力及其他能源占比': 0.048,
+                '供气总量': 0.565,
+                '工业二氧化硫排放': 0.145,
+                '第二产业占比': 0.519,
+                '工业氮氧化物排放': 0.175
             },
             std_errors: {
-                '环境关注度': 7.260, '总用水量': 0.277, '平均风速u10': 10.251, '平均风速v10': 12.101,
-                '煤炭占比': 0.572, '石油占比': 1.962, '天然气占比': 2.015, '电力及其他能源占比': 0.400,
-                '供气总量': 0.000, '工业二氧化硫排放': 0.000, '第二产业占比': 0.454, '工业氮氧化物排放': 0.000
+                '环境关注度': 7.260,
+                '总用水量': 0.277,
+                '平均风速u10': 10.251,
+                '平均风速v10': 12.101,
+                '煤炭占比': 0.572,
+                '石油占比': 1.962,
+                '天然气占比': 2.015,
+                '电力及其他能源占比': 0.400,
+                '供气总量': 0.000,
+                '工业二氧化硫排放': 0.000,
+                '第二产业占比': 0.454,
+                '工业氮氧化物排放': 0.000
             }
         };
 
         const ivData = {
             coefficients: {
-                '环境关注度': 8.688, '总用水量': 0.041, '平均风速u10': 10.383, '平均风速v10': 11.323,
-                '石油占比': 5.920, '天然气占比': -7.924, '电力及其他能源占比': -1.047,
-                '供气总量': 0.000, '工业二氧化硫排放': -0.000, '第二产业占比': 0.293, '工业氮氧化物排放': 0.001
+                '环境关注度': 8.688,
+                '总用水量': 0.041,
+                '平均风速u10': 10.383,
+                '平均风速v10': 11.323,
+                '石油占比': 3.848,
+                '天然气占比': -6.168,
+                '电力及其他能源占比': -0.790,
+                '供气总量': 0.000,
+                '工业二氧化硫排放': -0.000,
+                '第二产业占比': 0.293,
+                '工业氮氧化物排放': 0.001
             },
             p_values: {
-                '环境关注度': 0.229, '总用水量': 0.881, '平均风速u10': 0.309, '平均风速v10': 0.347,
-                '石油占比': 0.046, '天然气占比': 0.017, '电力及其他能源占比': 0.056,
-                '供气总量': 0.563, '工业二氧化硫排放': 0.143, '第二产业占比': 0.517, '工业氮氧化物排放': 0.173
+                '环境关注度': 0.231,
+                '总用水量': 0.881,
+                '平均风速u10': 0.311,
+                '平均风速v10': 0.349,
+                '石油占比': 0.050,
+                '天然气占比': 0.002,
+                '电力及其他能源占比': 0.048,
+                '供气总量': 0.565,
+                '工业二氧化硫排放': 0.145,
+                '第二产业占比': 0.519,
+                '工业氮氧化物排放': 0.175
+            }
+        };
+
+        const sdmData = {
+            coefficients: {
+                '环境关注度': 7.919,
+                '总用水量': 0.084,
+                '平均风速u10': 14.012,
+                '平均风速v10': 14.518,
+                '煤炭占比': 0.186,
+                '石油占比': 2.195,
+                '天然气占比': -5.461,
+                '电力及其他能源占比': -0.209,
+                '供气总量': 0.000,
+                '工业二氧化硫排放': -0.000,
+                '第二产业占比': 0.130,
+                '工业氮氧化物排放': 0.000,
+                'W_PM25': 0.265,
+                'W_煤炭占比': 0.186,
+                'W_工业二氧化硫排放': -0.000,
+                'W_工业氮氧化物排放': 0.000
+            },
+            p_values: {
+                '环境关注度': 0.224,
+                '总用水量': 0.705,
+                '平均风速u10': 0.167,
+                '平均风速v10': 0.188,
+                '煤炭占比': 0.822,
+                '石油占比': 0.528,
+                '天然气占比': 0.371,
+                '电力及其他能源占比': 0.797,
+                '供气总量': 0.593,
+                '工业二氧化硫排放': 0.145,
+                '第二产业占比': 0.733,
+                '工业氮氧化物排放': 0.216,
+                'W_PM25': 0.556,
+                'W_煤炭占比': 0.822,
+                'W_工业二氧化硫排放': 0.179,
+                'W_工业氮氧化物排放': 0.376
             }
         };
 
         const significantFeatures = [
-            ['天然气占比', -6.168, 0.002], ['电力及其他能源占比', -0.790, 0.048], ['石油占比', 3.848, 0.050]
+            ['天然气占比', -6.168, 0.002],
+            ['电力及其他能源占比', -0.790, 0.048],
+            ['石油占比', 3.848, 0.050]
         ];
 
         const cities = ['北京', '天津', '廊坊', '唐山', '秦皇岛', '沧州', '衡水', '石家庄', '邢台', '邯郸', '保定', '张家口', '承德'];
@@ -262,8 +346,8 @@
 
         function buildSDMTable() {
             const tbody = document.getElementById('sdm-table');
-            for (const [varName, coef] of Object.entries(benchmarkData.coefficients)) {
-                const pval = benchmarkData.p_values[varName];
+            for (const [varName, coef] of Object.entries(sdmData.coefficients)) {
+                const pval = sdmData.p_values[varName];
                 const sig = getSignificance(pval);
                 const isSig = sig !== '';
                 const coefClass = coef > 0 ? 'positive' : 'negative';
@@ -304,6 +388,16 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } } } }
             });
 
+            const sdmLabels = Object.keys(sdmData.coefficients);
+            const sdmValues = Object.values(sdmData.coefficients);
+            const sdmColors = sdmValues.map(v => v > 0 ? 'rgba(230, 126, 34, 0.7)' : 'rgba(46, 204, 113, 0.7)');
+
+            new Chart(document.getElementById('spilloverChart'), {
+                type: 'bar',
+                data: { labels: sdmLabels, datasets: [{ data: sdmValues, backgroundColor: sdmColors, borderWidth: 1, borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } } } }
+            });
+
             new Chart(document.getElementById('importanceChart'), {
                 type: 'doughnut',
                 data: {
@@ -311,12 +405,6 @@
                     datasets: [{ data: significantFeatures.map(f => Math.abs(f[1])), backgroundColor: ['rgba(0,217,255,0.7)', 'rgba(155,89,182,0.7)', 'rgba(230,126,34,0.7)'], borderWidth: 0 }]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: 'rgba(255,255,255,0.9)', padding: 20 } } } }
-            });
-
-            new Chart(document.getElementById('spilloverChart'), {
-                type: 'bar',
-                data: { labels: cities, datasets: [{ label: 'PM2.5浓度', data: cityPm25, backgroundColor: 'rgba(255,107,107,0.7)', borderWidth: 1, borderRadius: 6 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } } }, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } } }
             });
 
             new Chart(document.getElementById('moransIChart'), {
