@@ -96,7 +96,7 @@
                         <span class="variable-tag">供气总量</span>
                     </div>
                     <div class="method-box">
-                        <div class="method-title">空间距离变量（to开头）</div>
+                        <div class="method-title">空间距离变量（to开头）- 固定值，不作为变量分析</div>
                         <span class="variable-tag">tobeijing - 到北京的距离</span>
                         <span class="variable-tag">totianjin - 到天津的距离</span>
                         <span class="variable-tag">toshijiazhuang - 到石家庄的距离</span>
@@ -110,6 +110,7 @@
                         <span class="variable-tag">tocangzhou - 到沧州的距离</span>
                         <span class="variable-tag">tolangfang - 到廊坊的距离</span>
                         <span class="variable-tag">tohengshui - 到衡水的距离</span>
+                        <p style="color: rgba(255,255,255,0.7); margin-top: 15px;">注：距离变量为固定值（地理距离不随时间变化），因此在分析中被排除</p>
                     </div>
                 </div>
                 <div class="glass-card">
@@ -328,12 +329,11 @@
                 "total_observations": 195,
                 "variables": ["year", "city", "Unnamed: 0", "env_attention", "total_water", "avg_u10", "avg_v10", "tobeijing", "totianjin", "toshijiazhuang", "totangshan", "toqinhuangdao", "tohandan", "toxingtai", "tobaoding", "tozhangjiakou", "tochengde", "tocangzhou", "tolangfang", "tohengshui", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "pm25", "第二产业占比", "供气总量"],
                 "dependent_variable": "pm25",
-                "independent_variables": ["env_attention", "total_water", "avg_u10", "avg_v10", "tobeijing", "totianjin", "toshijiazhuang", "totangshan", "toqinhuangdao", "tohandan", "toxingtai", "tobaoding", "tozhangjiakou", "tochengde", "tocangzhou", "tolangfang", "tohengshui", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "第二产业占比", "供气总量"]
+                "independent_variables": ["env_attention", "avg_u10", "avg_v10", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "第二产业占比", "供气总量"]
             },
             "descriptive_statistics": {
                 "pm25": {"count": 195, "mean": 4.46e-16, "std": 1.0, "min": -1.90, "q25": -0.73, "median": -0.27, "q75": 0.92, "max": 2.35},
                 "env_attention": {"count": 195, "mean": -5.47e-17, "std": 1.0, "min": -2.86, "q25": -0.58, "median": -0.03, "q75": 0.57, "max": 2.60},
-                "total_water": {"count": 195, "mean": 5.12e-18, "std": 1.0, "min": -1.85, "q25": -0.64, "median": -0.27, "q75": 0.45, "max": 3.32},
                 "avg_u10": {"count": 195, "mean": -1.82e-17, "std": 1.0, "min": -2.88, "q25": -0.51, "median": -0.11, "q75": 0.49, "max": 2.38},
                 "avg_v10": {"count": 195, "mean": 0.0, "std": 1.0, "min": -2.71, "q25": -0.50, "median": 0.10, "q75": 0.47, "max": 1.96},
                 "煤炭占能源消费总量的比重 (%)": {"count": 195, "mean": 1.05e-16, "std": 1.0, "min": -1.60, "q25": -1.06, "median": 0.01, "q75": 1.15, "max": 1.15},
@@ -347,32 +347,39 @@
                 "llc_test": {
                     "pm25": {"statistic": 6.23e-15, "p_value": 1.0, "stationary": true},
                     "env_attention": {"statistic": -7.63e-16, "p_value": 1.0, "stationary": true},
-                    "total_water": {"statistic": 7.16e-17, "p_value": 1.0, "stationary": true},
                     "avg_u10": {"statistic": -2.54e-16, "p_value": 1.0, "stationary": true},
-                    "avg_v10": {"statistic": 0.0, "p_value": 1.0, "stationary": true}
+                    "avg_v10": {"statistic": 0.0, "p_value": 1.0, "stationary": true},
+                    "煤炭占能源消费总量的比重 (%)": {"statistic": 1.46e-15, "p_value": 1.0, "stationary": true},
+                    "石油占能源消费总量的比重 (%)": {"statistic": -9.50e-14, "p_value": 1.0, "stationary": true},
+                    "天然气占能源消费总量的比重 (%)": {"statistic": 3.82e-15, "p_value": 1.0, "stationary": true},
+                    "一次电力及其他能源占能源总量的比重 (%)": {"statistic": 4.45e-15, "p_value": 1.0, "stationary": true},
+                    "第二产业占比": {"statistic": 9.22e-15, "p_value": 1.0, "stationary": true},
+                    "供气总量": {"statistic": 0.0, "p_value": 1.0, "stationary": true}
                 },
                 "ips_test": {
                     "pm25": {"statistic": 38.16, "p_value": 5.17e-09, "stationary": false},
                     "env_attention": {"statistic": 6.72, "p_value": 0.035, "stationary": false},
-                    "total_water": {"statistic": 24.28, "p_value": 5.34e-06, "stationary": false},
                     "avg_u10": {"statistic": 1.50, "p_value": 0.473, "stationary": true},
-                    "avg_v10": {"statistic": 16.00, "p_value": 0.00034, "stationary": false}
+                    "avg_v10": {"statistic": 16.00, "p_value": 0.00034, "stationary": false},
+                    "煤炭占能源消费总量的比重 (%)": {"statistic": 2535.43, "p_value": 0.0, "stationary": false},
+                    "石油占能源消费总量的比重 (%)": {"statistic": 2650.79, "p_value": 0.0, "stationary": false},
+                    "天然气占能源消费总量的比重 (%)": {"statistic": 1388.44, "p_value": 3.20e-302, "stationary": false},
+                    "一次电力及其他能源占能源总量的比重 (%)": {"statistic": 54.27, "p_value": 1.64e-12, "stationary": false},
+                    "第二产业占比": {"statistic": 10.63, "p_value": 0.0049, "stationary": false},
+                    "供气总量": {"statistic": 150.78, "p_value": 1.81e-33, "stationary": false}
                 }
             },
             "multicollinearity_test": {
                 "vif_results": {
-                    "env_attention": {"vif": 1.49, "high_multicollinearity": false},
-                    "total_water": {"vif": 4.81, "high_multicollinearity": false},
-                    "avg_u10": {"vif": 7.62, "high_multicollinearity": false},
-                    "avg_v10": {"vif": 44.71, "high_multicollinearity": true},
-                    "tobeijing": {"vif": Infinity, "high_multicollinearity": true},
-                    "totianjin": {"vif": Infinity, "high_multicollinearity": true},
-                    "煤炭占能源消费总量的比重 (%)": {"vif": 45692.09, "high_multicollinearity": true},
-                    "石油占能源消费总量的比重 (%)": {"vif": 1087.88, "high_multicollinearity": true},
-                    "天然气占能源消费总量的比重 (%)": {"vif": 3953.64, "high_multicollinearity": true},
-                    "一次电力及其他能源占能源总量的比重 (%)": {"vif": 16802.55, "high_multicollinearity": true},
-                    "第二产业占比": {"vif": 14.89, "high_multicollinearity": true},
-                    "供气总量": {"vif": 14.61, "high_multicollinearity": true}
+                    "env_attention": {"vif": 1.21, "high_multicollinearity": false},
+                    "avg_u10": {"vif": 1.82, "high_multicollinearity": false},
+                    "avg_v10": {"vif": 2.28, "high_multicollinearity": false},
+                    "煤炭占能源消费总量的比重 (%)": {"vif": 39061.06, "high_multicollinearity": true},
+                    "石油占能源消费总量的比重 (%)": {"vif": 914.90, "high_multicollinearity": true},
+                    "天然气占能源消费总量的比重 (%)": {"vif": 3371.20, "high_multicollinearity": true},
+                    "一次电力及其他能源占能源总量的比重 (%)": {"vif": 14345.85, "high_multicollinearity": true},
+                    "第二产业占比": {"vif": 3.44, "high_multicollinearity": false},
+                    "供气总量": {"vif": 1.94, "high_multicollinearity": false}
                 },
                 "threshold": 10
             }
@@ -435,7 +442,7 @@
         }
 
         function initCharts() {
-            const missingLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10', 'avg_v10'];
+            const missingLabels = ['pm25', 'env_attention', 'avg_u10', 'avg_v10', '第二产业占比'];
             const missingBefore = [52, 52, 52, 52, 52];
             const missingAfter = [0, 0, 0, 0, 0];
 
@@ -460,8 +467,8 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
             });
 
-            const standardizeLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10'];
-            const beforeStd = [45.2, 0.48, 18.5, 0.12];
+            const standardizeLabels = ['pm25', 'env_attention', 'avg_u10', 'avg_v10'];
+            const beforeStd = [45.2, 0.48, 0.12, 0.10];
             const afterStd = [1.0, 1.0, 1.0, 1.0];
 
             new Chart(document.getElementById('standardizeChart'), {
@@ -476,9 +483,9 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
             });
 
-            const stationarityLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10', 'avg_v10'];
+            const stationarityLabels = ['pm25', 'env_attention', 'avg_u10', 'avg_v10', '第二产业占比'];
             const llcPValues = [1.0, 1.0, 1.0, 1.0, 1.0];
-            const ipsPValues = [5.17e-09, 0.035, 5.34e-06, 0.473, 0.00034];
+            const ipsPValues = [5.17e-09, 0.035, 0.473, 0.00034, 0.0049];
 
             new Chart(document.getElementById('stationarityChart'), {
                 type: 'bar',
@@ -492,8 +499,8 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' }, title: { display: true, text: 'p值 (越大越可能平稳)', color: 'rgba(255,255,255,0.7)' } }, x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } } }
             });
 
-            const vifLabels = ['env_attention', 'total_water', 'avg_u10', 'avg_v10', '第二产业占比', '供气总量'];
-            const vifValues = [1.49, 4.81, 7.62, 44.71, 14.89, 14.61];
+            const vifLabels = ['env_attention', 'avg_u10', 'avg_v10', '第二产业占比', '供气总量'];
+            const vifValues = [1.21, 1.82, 2.28, 3.44, 1.94];
 
             new Chart(document.getElementById('vifChart'), {
                 type: 'bar',
@@ -520,7 +527,7 @@
                 }
             });
 
-            const distLabels = ['pm25', 'env_attention', 'total_water', 'avg_u10', 'avg_v10', '第二产业占比'];
+            const distLabels = ['pm25', 'env_attention', 'avg_u10', 'avg_v10', '第二产业占比', '供气总量'];
             const distMeans = [0, 0, 0, 0, 0, 0];
             const distStds = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 

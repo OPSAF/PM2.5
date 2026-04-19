@@ -14,7 +14,7 @@ print("原始数据列:", df.columns.tolist())
 df.columns = df.columns.str.strip()
 
 dependent_var = 'pm25'
-independent_vars = [col for col in df.columns if col not in ['city', 'year', dependent_var, 'Unnamed: 0', '']]
+independent_vars = [col for col in df.columns if col not in ['city', 'year', dependent_var, 'Unnamed: 0', ''] and not col.startswith('to')]
 
 print(f"\n被解释变量: {dependent_var}")
 print(f"解释变量数量: {len(independent_vars)}")
