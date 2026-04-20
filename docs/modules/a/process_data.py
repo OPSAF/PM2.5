@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy import stats
+from scipy.stats import pearsonr, spearmanr, skew, kurtosis
 import json
 import os
 
@@ -189,28 +190,104 @@ for col in continuous_cols:
             'q25': float(series.quantile(0.25)),
             'median': float(series.median()),
             'q75': float(series.quantile(0.75)),
-            'max': float(series.max())
+            'max': float(series.max()),
+            'skewness': float(skew(series)),
+            'kurtosis': float(kurtosis(series)),
+            'iqr': float(series.quantile(0.75) - series.quantile(0.25)),
+            'cv': float(series.std() / series.mean()) if series.mean() != 0 else 0
         }
+
+print("\n高级描述性统计（偏度、峰度等）:")
+for var, stats_dict in descriptive_stats.items():
+    print(f"  {var}: 偏度={stats_dict['skewness']:.3f}, 峰度={stats_dict['kurtosis']:.3f}, IQR={stats_dict['iqr']:.3f}, CV={stats_dict['cv']:.3f}")
+
+correlation_analysis = {}
+for i, var1 in enumerate(continuous_cols):
+    for var2 in continuous_cols[i+1:]:
+        if var1 in merged_df.columns and var2 in merged_df.columns:
+            valid_mask = merged_df[var1].notna() & merged_df[var2].notna()
+            if valid_mask.sum() > 10:
+                try:
+                    pearson_r, pearson_p = pearsonr(merged_df.loc[valid_mask, var1], merged_df.loc[valid_mask, var2])
+                    spearman_r, spearman_p = spearmanr(merged_df.loc[valid_mask, var1], merged_df.loc[valid_mask, var2])
+                    correlation_analysis[f"{var1}_vs_{var2}"] = {
+                        'pearson_r': float(pearson_r),
+                        'pearson_p': float(pearson_p),
+                        'spearman_r': float(spearman_r),
+                        'spearman_p': float(spearman_p),
+                        'abs_pearson_r': float(abs(pearson_r))
+                    }
+                except Exception as e:
+                    pass
+
+print("\n相关性分析 (Pearson相关系数):")
+for key, value in sorted(correlation_analysis.items(), key=lambda x: x[1]['abs_pearson_r'], reverse=True)[:10]:
+    print(f"  {key}: r={value['pearson_r']:.3f}, p={value['pearson_p']:.4f}")
+
+city_ranking = {}
+for city in jjj_cities:
+    city_data = merged_df[merged_df['city'] == city]
+    if len(city_data) > 0:
+        pm25_mean = city_data[dependent_var].mean()
+        pm25_std = city_data[dependent_var].std()
+        city_ranking[city] = {
+            'pm25_mean': float(pm25_mean),
+            'pm25_std': float(pm25_std),
+            'pm25_trend': float(city_data[dependent_var].iloc[-1] - city_data[dependent_var].iloc[0]) if len(city_data) > 1 else 0
+        }
+
+city_ranking_sorted = dict(sorted(city_ranking.items(), key=lambda x: x[1]['pm25_mean'], reverse=True))
+print("\n城市PM2.5排名 (从高到低):")
+for i, (city, stats) in enumerate(city_ranking_sorted.items(), 1):
+    print(f"  {i}. {city}: 均值={stats['pm25_mean']:.3f}, 标准差={stats['pm25_std']:.3f}, 趋势={stats['pm25_trend']:.3f}")
+
+yearly_trend = {}
+for year in target_years:
+    year_data = merged_df[merged_df['year'] == year]
+    if len(year_data) > 0:
+        yearly_trend[year] = {
+            'pm25_mean': float(year_data[dependent_var].mean()),
+            'pm25_std': float(year_data[dependent_var].std()),
+            'observation_count': int(len(year_data))
+        }
+        for var in independent_vars[:5]:
+            if var in year_data.columns:
+                yearly_trend[year][var] = float(year_data[var].mean())
+
+print("\n年度趋势分析:")
+for year, stats in yearly_trend.items():
+    print(f"  {year}: PM2.5均值={stats['pm25_mean']:.3f}, PM2.5标准差={stats['pm25_std']:.3f}")
+
+north_cities = ['北京', '唐山', '廊坊', '张家口', '承德', '秦皇岛']
+south_cities = ['天津', '保定', '沧州', '石家庄', '衡水', '邢台', '邯郸']
+
+north_data = merged_df[merged_df['city'].isin(north_cities)]
+south_data = merged_df[merged_df['city'].isin(south_cities)]
+
+regional_comparison = {
+    'north': {
+        'pm25_mean': float(north_data[dependent_var].mean()),
+        'pm25_std': float(north_data[dependent_var].std()),
+        'city_count': len(north_cities)
+    },
+    'south': {
+        'pm25_mean': float(south_data[dependent_var].mean()),
+        'pm25_std': float(south_data[dependent_var].std()),
+        'city_count': len(south_cities)
+    },
+    'difference': float(north_data[dependent_var].mean() - south_data[dependent_var].mean())
+}
+
+print(f"\n区域对比分析 (北方 vs 南方):")
+print(f"  北方城市: PM2.5均值={regional_comparison['north']['pm25_mean']:.3f}, PM2.5标准差={regional_comparison['north']['pm25_std']:.3f}")
+print(f"  南方城市: PM2.5均值={regional_comparison['south']['pm25_mean']:.3f}, PM2.5标准差={regional_comparison['south']['pm25_std']:.3f}")
+print(f"  差异: {regional_comparison['difference']:.3f}")
 
 variable_description = {
     dependent_var: "PM2.5浓度（被解释变量）",
     'env_attention': '环境关注度',
-    'total_water': '总水量',
     'avg_u10': '东向风速分量',
     'avg_v10': '北向风速分量',
-    'tobeijing': '到北京的距离',
-    'totianjin': '到天津的距离',
-    'toshijiazhuang': '到石家庄的距离',
-    'totangshan': '到唐山的距离',
-    'toqinhuangdao': '到秦皇岛的距离',
-    'tohandan': '到邯郸的距离',
-    'toxingtai': '到邢台的距禋',
-    'tobaoding': '到保定的距禋',
-    'tozhangjiakou': '到张家口的距禋',
-    'tochengde': '到承德的距禋',
-    'tocangzhou': '到沧州的距禋',
-    'tolangfang': '到廊坊的距禋',
-    'tohengshui': '到衡水的距禋',
     '煤炭占能源消费总量的比重 (%)': '煤炭占能源消费总量的比重',
     '石油占能源消费总量的比重 (%)': '石油占能源消费总量的比重',
     '天然气占能源消费总量的比重 (%)': '天然气占能源消费总量的比重',
@@ -254,7 +331,18 @@ result_summary = {
         'threshold': 10,
         'removed_variables': removed_for_vif
     },
-    'descriptive_statistics': descriptive_stats
+    'descriptive_statistics': descriptive_stats,
+    'correlation_analysis': correlation_analysis,
+    'city_ranking': city_ranking_sorted,
+    'yearly_trend': yearly_trend,
+    'regional_comparison': regional_comparison,
+    'advanced_metrics': {
+        'high_correlation_pairs': [k for k, v in sorted(correlation_analysis.items(), key=lambda x: x[1]['abs_pearson_r'], reverse=True)[:15]],
+        'most_polluted_city': list(city_ranking_sorted.keys())[0] if city_ranking_sorted else None,
+        'least_polluted_city': list(city_ranking_sorted.keys())[-1] if city_ranking_sorted else None,
+        'north_south_difference': regional_comparison['difference'],
+        'overall_pm25_trend': float(merged_df[merged_df['year'] == 2024][dependent_var].mean() - merged_df[merged_df['year'] == 2010][dependent_var].mean()) if 2024 in target_years and 2010 in target_years else 0
+    }
 }
 
 output_json = os.path.join(base_path, "processing_results.json")

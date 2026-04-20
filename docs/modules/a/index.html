@@ -21,6 +21,7 @@
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: linear-gradient(135deg, rgba(0,217,255,0.2) 0%, rgba(0,255,136,0.2) 100%); border-radius: 15px; padding: 25px; text-align: center; border: 1px solid rgba(0,217,255,0.3); }
         .stat-card.purple { background: linear-gradient(135deg, rgba(155,89,182,0.2) 0%, rgba(142,68,173,0.2) 100%); border: 1px solid rgba(155,89,182,0.3); }
+        .stat-card.orange { background: linear-gradient(135deg, rgba(255,107,107,0.2) 0%, rgba(255,165,0,0.2) 100%); border: 1px solid rgba(255,107,107,0.3); }
         .stat-value { font-size: 2.5rem; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(0,217,255,0.5); }
         .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
         .table-custom thead th { background: linear-gradient(135deg, rgba(0,217,255,0.3) 0%, rgba(0,255,136,0.3) 100%); color: #fff; padding: 15px; text-align: center; font-weight: 600; border: none; }
@@ -33,6 +34,15 @@
         .variable-tag { display: inline-block; background: rgba(0,217,255,0.2); border: 1px solid rgba(0,217,255,0.4); border-radius: 20px; padding: 5px 15px; margin: 5px; font-size: 0.85rem; }
         .vif-high { background: rgba(255,107,107,0.3) !important; border-color: rgba(255,107,107,0.5) !important; }
         .vif-ok { background: rgba(0,255,136,0.2) !important; border-color: rgba(0,255,136,0.4) !important; }
+        .rank-badge { display: inline-block; width: 30px; height: 30px; line-height: 30px; border-radius: 50%; text-align: center; font-weight: bold; }
+        .rank-1 { background: rgba(255,107,107,0.7); }
+        .rank-2 { background: rgba(255,165,0,0.7); }
+        .rank-3 { background: rgba(255,215,0,0.7); }
+        .rank-low { background: rgba(0,255,136,0.5); }
+        .correlation-high { background: rgba(255,107,107,0.3); }
+        .correlation-medium { background: rgba(255,215,0,0.3); }
+        .correlation-low { background: rgba(0,255,136,0.3); }
+        .insight-box { background: linear-gradient(135deg, rgba(0,217,255,0.15) 0%, rgba(0,255,136,0.15) 100%); border-left: 4px solid #00d9ff; padding: 15px 20px; margin: 15px 0; border-radius: 0 10px 10px 0; }
         @media (max-width: 768px) { .header h1 { font-size: 1.8rem; } .stat-value { font-size: 2rem; } .chart-container { height: 300px; } }
     </style>
 </head>
@@ -41,17 +51,20 @@
         <h1>PM2.5 面板数据处理模块</h1>
         <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">2010-2024年京津冀13市平衡面板数据处理与检验</p>
     </div>
-    
+
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item"><button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">数据概览</button></li>
         <li class="nav-item"><button class="nav-link" id="missing-tab" data-bs-toggle="tab" data-bs-target="#missing" type="button">缺失值处理</button></li>
         <li class="nav-item"><button class="nav-link" id="outlier-tab" data-bs-toggle="tab" data-bs-target="#outlier" type="button">异常值处理</button></li>
         <li class="nav-item"><button class="nav-link" id="standardize-tab" data-bs-toggle="tab" data-bs-target="#standardize" type="button">标准化处理</button></li>
+        <li class="nav-item"><button class="nav-link" id="correlation-tab" data-bs-toggle="tab" data-bs-target="#correlation" type="button">相关性分析</button></li>
+        <li class="nav-item"><button class="nav-link" id="city-tab" data-bs-toggle="tab" data-bs-target="#city" type="button">城市分析</button></li>
+        <li class="nav-item"><button class="nav-link" id="trend-tab" data-bs-toggle="tab" data-bs-target="#trend" type="button">趋势分析</button></li>
         <li class="nav-item"><button class="nav-link" id="stationarity-tab" data-bs-toggle="tab" data-bs-target="#stationarity" type="button">平稳性检验</button></li>
         <li class="nav-item"><button class="nav-link" id="vif-tab" data-bs-toggle="tab" data-bs-target="#vif" type="button">共线性检验</button></li>
         <li class="nav-item"><button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button">描述性统计</button></li>
     </ul>
-    
+
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="overview">
             <div class="container-fluid">
@@ -71,8 +84,8 @@
                             <div class="stat-label">观测值总数</div>
                         </div>
                         <div class="stat-card purple">
-                            <div class="stat-value">24</div>
-                            <div class="stat-label">变量数量</div>
+                            <div class="stat-value">10</div>
+                            <div class="stat-label">分析变量数</div>
                         </div>
                     </div>
                 </div>
@@ -83,9 +96,8 @@
                         <span class="variable-tag" style="background: rgba(255,107,107,0.3); border-color: rgba(255,107,107,0.5);">pm25 - PM2.5浓度</span>
                     </div>
                     <div class="method-box">
-                        <div class="method-title">解释变量</div>
+                        <div class="method-title">解释变量（排除距离变量）</div>
                         <span class="variable-tag">env_attention - 环境关注度</span>
-                        <span class="variable-tag">total_water - 总水量</span>
                         <span class="variable-tag">avg_u10 - 东向风速分量</span>
                         <span class="variable-tag">avg_v10 - 北向风速分量</span>
                         <span class="variable-tag">煤炭占能源消费总量的比重</span>
@@ -133,7 +145,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="tab-pane fade" id="missing">
             <div class="container-fluid">
                 <div class="glass-card">
@@ -167,7 +179,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="tab-pane fade" id="outlier">
             <div class="container-fluid">
                 <div class="glass-card">
@@ -195,7 +207,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="tab-pane fade" id="standardize">
             <div class="container-fluid">
                 <div class="glass-card">
@@ -219,7 +231,7 @@
                             <div class="stat-label">标准化后标准差</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-value">24</div>
+                            <div class="stat-value">10</div>
                             <div class="stat-label">处理变量数</div>
                         </div>
                     </div>
@@ -230,7 +242,142 @@
                 </div>
             </div>
         </div>
-        
+
+        <div class="tab-pane fade" id="correlation">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">相关性分析</h3>
+                    <div class="method-box">
+                        <div class="method-title">Pearson & Spearman 相关系数</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
+                            Pearson相关系数：衡量线性相关程度<br>
+                            Spearman相关系数：衡量单调相关程度，对异常值更鲁棒<br>
+                            <strong style="color: #00ff88;">|r| &lt; 0.3</strong>：弱相关
+                            <strong style="color: #ffd700;">0.3 ≤ |r| &lt; 0.7</strong>：中等相关
+                            <strong style="color: #ff6b6b;">|r| ≥ 0.7</strong>：强相关
+                        </p>
+                    </div>
+                    <div class="insight-box">
+                        <h4 style="color: #00d9ff; margin-bottom: 10px;">关键发现</h4>
+                        <ul style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                            <li><strong>煤炭vs天然气</strong>：r = -0.986，强负相关（能源结构此消彼长）</li>
+                            <li><strong>煤炭vs一次电力</strong>：r = -0.984，强负相关</li>
+                            <li><strong>PM2.5vs煤炭</strong>：r = 0.653，中等正相关（煤炭占比越高，污染越重）</li>
+                            <li><strong>PM2.5vs天然气</strong>：r = -0.668，中等负相关（天然气比例越高，污染越轻）</li>
+                            <li><strong>风速分量u10 vs v10</strong>：r = -0.652，中等负相关（风向特性）</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">高相关性变量对</h3>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead><tr><th>变量对</th><th>Pearson r</th><th>Pearson p值</th><th>Spearman r</th><th>相关强度</th></tr></thead>
+                            <tbody id="correlation-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">PM2.5与解释变量相关性</h3>
+                    <div class="chart-container"><canvas id="pm25CorrelationChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="city">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">城市PM2.5排名分析</h3>
+                    <div class="method-box">
+                        <div class="method-title">排名说明</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
+                            基于2010-2024年各城市PM2.5浓度均值进行排名<br>
+                            趋势值 = 2024年浓度 - 2010年浓度（负值表示改善）
+                        </p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card orange">
+                            <div class="stat-value" id="most-polluted-city">衡水</div>
+                            <div class="stat-label">污染最重城市</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="least-polluted-city">承德</div>
+                            <div class="stat-label">污染最轻城市</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-value" id="best-improvement">廊坊</div>
+                            <div class="stat-label">改善最明显</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">城市排名表</h3>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead><tr><th>排名</th><th>城市</th><th>PM2.5均值</th><th>标准差</th><th>变化趋势</th><th>污染等级</th></tr></thead>
+                            <tbody id="city-ranking-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">城市PM2.5对比</h3>
+                    <div class="chart-container"><canvas id="cityRankingChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="trend">
+            <div class="container-fluid">
+                <div class="glass-card">
+                    <h3 class="card-title-custom">年度趋势分析</h3>
+                    <div class="method-box">
+                        <div class="method-title">时间趋势</div>
+                        <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
+                            2010-2024年PM2.5浓度整体呈下降趋势<br>
+                            2015年出现一个小高峰，之后持续改善<br>
+                            2020-2024年浓度显著降低，环境治理成效显著
+                        </p>
+                    </div>
+                    <div class="insight-box">
+                        <h4 style="color: #00d9ff; margin-bottom: 10px;">关键发现</h4>
+                        <ul style="color: rgba(255,255,255,0.9); line-height: 1.8;">
+                            <li><strong>2010-2015年</strong>：PM2.5浓度较高，均值约0.6-0.9</li>
+                            <li><strong>2016年后</strong>：浓度持续下降，2024年均值降至-0.97</li>
+                            <li><strong>总体改善</strong>：从0.61降至-0.97，降幅显著</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">年度PM2.5趋势</h3>
+                    <div class="chart-container"><canvas id="yearlyTrendChart"></canvas></div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">区域对比分析</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card orange">
+                            <div class="stat-value" id="north-pm25">-0.54</div>
+                            <div class="stat-label">北方城市PM2.5均值</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="south-pm25">0.47</div>
+                            <div class="stat-label">南方城市PM2.5均值</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-value" id="region-diff">-1.01</div>
+                            <div class="stat-label">区域差异</div>
+                        </div>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 15px; text-align: center;">
+                        北方城市（张家口、承德、秦皇岛等）空气质量优于南方城市（石家庄、邢台、邯郸等）
+                    </p>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title-custom">区域PM2.5对比</h3>
+                    <div class="chart-container"><canvas id="regionalCompareChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
         <div class="tab-pane fade" id="stationarity">
             <div class="container-fluid">
                 <div class="glass-card">
@@ -259,7 +406,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="tab-pane fade" id="vif">
             <div class="container-fluid">
                 <div class="glass-card">
@@ -289,24 +436,20 @@
                 <div class="glass-card">
                     <h3 class="card-title-custom">高共线性变量说明</h3>
                     <div class="method-box">
-                        <div class="method-title">距离变量（to开头）</div>
-                        <p style="color: rgba(255,255,255,0.8);">各城市之间的距离是固定值（地理距离不随时间变化），因此存在完美的线性关系，VIF为无穷大</p>
-                    </div>
-                    <div class="method-box">
                         <div class="method-title">能源结构变量</div>
                         <p style="color: rgba(255,255,255,0.8);">煤炭、石油、天然气、电力等占比之和恒等于100%，存在严重共线性</p>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div class="tab-pane fade" id="stats">
             <div class="container-fluid">
                 <div class="glass-card">
                     <h3 class="card-title-custom">描述性统计</h3>
                     <div class="table-responsive">
                         <table class="table-custom">
-                            <thead><tr><th>变量</th><th>观测数</th><th>均值</th><th>标准差</th><th>最小值</th><th>25%分位</th><th>中位数</th><th>75%分位</th><th>最大值</th></tr></thead>
+                            <thead><tr><th>变量</th><th>观测数</th><th>均值</th><th>标准差</th><th>最小值</th><th>25%分位</th><th>中位数</th><th>75%分位</th><th>最大值</th><th>偏度</th><th>峰度</th></tr></thead>
                             <tbody id="stats-table"></tbody>
                         </table>
                     </div>
@@ -318,7 +461,7 @@
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const processingResults = {
@@ -332,16 +475,83 @@
                 "independent_variables": ["env_attention", "avg_u10", "avg_v10", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "第二产业占比", "供气总量"]
             },
             "descriptive_statistics": {
-                "pm25": {"count": 195, "mean": 4.46e-16, "std": 1.0, "min": -1.90, "q25": -0.73, "median": -0.27, "q75": 0.92, "max": 2.35},
-                "env_attention": {"count": 195, "mean": -5.47e-17, "std": 1.0, "min": -2.86, "q25": -0.58, "median": -0.03, "q75": 0.57, "max": 2.60},
-                "avg_u10": {"count": 195, "mean": -1.82e-17, "std": 1.0, "min": -2.88, "q25": -0.51, "median": -0.11, "q75": 0.49, "max": 2.38},
-                "avg_v10": {"count": 195, "mean": 0.0, "std": 1.0, "min": -2.71, "q25": -0.50, "median": 0.10, "q75": 0.47, "max": 1.96},
-                "煤炭占能源消费总量的比重 (%)": {"count": 195, "mean": 1.05e-16, "std": 1.0, "min": -1.60, "q25": -1.06, "median": 0.01, "q75": 1.15, "max": 1.15},
-                "石油占能源消费总量的比重 (%)": {"count": 195, "mean": -6.80e-15, "std": 1.0, "min": -1.34, "q25": -1.34, "median": 0.24, "q75": 0.96, "max": 1.10},
-                "天然气占能源消费总量的比重 (%)": {"count": 195, "mean": 2.73e-16, "std": 1.0, "min": -1.07, "q25": -1.07, "median": -0.09, "q75": 1.04, "max": 1.35},
-                "一次电力及其他能源占能源总量的比重 (%)": {"count": 195, "mean": 3.19e-16, "std": 1.0, "min": -1.04, "q25": -1.04, "median": -0.21, "q75": 0.90, "max": 2.01},
-                "第二产业占比": {"count": 195, "mean": 6.60e-16, "std": 1.0, "min": -2.61, "q25": -0.69, "median": 0.06, "q75": 0.87, "max": 1.94},
-                "供气总量": {"count": 195, "mean": 0.0, "std": 1.0, "min": -0.42, "q25": -0.40, "median": -0.36, "q75": -0.25, "max": 4.45}
+                "pm25": {"count": 195, "mean": 4.46e-16, "std": 1.0, "min": -1.90, "q25": -0.73, "median": -0.27, "q75": 0.92, "max": 2.35, "skewness": 0.209, "kurtosis": -1.023, "iqr": 1.643, "cv": 2240311039125629.50},
+                "env_attention": {"count": 195, "mean": -5.47e-17, "std": 1.0, "min": -2.86, "q25": -0.58, "median": -0.03, "q75": 0.57, "max": 2.60, "skewness": -0.250, "kurtosis": 0.875, "iqr": 1.154, "cv": -18295873486192644.00},
+                "avg_u10": {"count": 195, "mean": -1.82e-17, "std": 1.0, "min": -2.88, "q25": -0.51, "median": -0.11, "q75": 0.49, "max": 2.38, "skewness": 0.142, "kurtosis": 0.243, "iqr": 1.005, "cv": -54887620458577920.00},
+                "avg_v10": {"count": 195, "mean": 0.0, "std": 1.0, "min": -2.71, "q25": -0.50, "median": 0.10, "q75": 0.47, "max": 1.96, "skewness": -0.623, "kurtosis": 0.835, "iqr": 0.968, "cv": 0.00},
+                "煤炭占能源消费总量的比重 (%)": {"count": 195, "mean": 1.05e-16, "std": 1.0, "min": -1.60, "q25": -1.06, "median": 0.01, "q75": 1.15, "max": 1.15, "skewness": -0.098, "kurtosis": -1.560, "iqr": 2.206, "cv": 9545673123230956.00},
+                "石油占能源消费总量的比重 (%)": {"count": 195, "mean": -6.80e-15, "std": 1.0, "min": -1.34, "q25": -1.34, "median": 0.24, "q75": 0.96, "max": 1.10, "skewness": -0.452, "kurtosis": -1.554, "iqr": 2.305, "cv": -146954807118013.06},
+                "天然气占能源消费总量的比重 (%)": {"count": 195, "mean": 2.73e-16, "std": 1.0, "min": -1.07, "q25": -1.07, "median": -0.09, "q75": 1.04, "max": 1.35, "skewness": 0.116, "kurtosis": -1.754, "iqr": 2.119, "cv": 3659174697238530.00},
+                "一次电力及其他能源占能源总量的比重 (%)": {"count": 195, "mean": 3.19e-16, "std": 1.0, "min": -1.04, "q25": -1.04, "median": -0.21, "q75": 0.90, "max": 2.01, "skewness": 0.476, "kurtosis": -1.076, "iqr": 1.934, "cv": 3136435454775878.00},
+                "第二产业占比": {"count": 195, "mean": 6.60e-16, "std": 1.0, "min": -2.61, "q25": -0.69, "median": 0.06, "q75": 0.87, "max": 1.94, "skewness": -0.574, "kurtosis": -0.285, "iqr": 1.563, "cv": 1514141254029737.00},
+                "供气总量": {"count": 195, "mean": 0.0, "std": 1.0, "min": -0.42, "q25": -0.40, "median": -0.36, "q75": -0.25, "max": 4.45, "skewness": 3.183, "kurtosis": 9.536, "iqr": 0.146, "cv": 0.00}
+            },
+            "correlation_analysis": {
+                "煤炭占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)": {"pearson_r": -0.986, "pearson_p": 0.0, "spearman_r": -0.986, "spearman_p": 0.0, "abs_pearson_r": 0.986},
+                "煤炭占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)": {"pearson_r": -0.984, "pearson_p": 0.0, "spearman_r": -0.984, "spearman_p": 0.0, "abs_pearson_r": 0.984},
+                "天然气占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)": {"pearson_r": 0.960, "pearson_p": 0.0, "spearman_r": 0.960, "spearman_p": 0.0, "abs_pearson_r": 0.960},
+                "煤炭占能源消费总量的比重 (%)_vs_石油占能源消费总量的比重 (%)": {"pearson_r": -0.752, "pearson_p": 0.0, "spearman_r": -0.752, "spearman_p": 0.0, "abs_pearson_r": 0.752},
+                "石油占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)": {"pearson_r": 0.730, "pearson_p": 0.0, "spearman_r": 0.730, "spearman_p": 0.0, "abs_pearson_r": 0.730},
+                "pm25_vs_天然气占能源消费总量的比重 (%)": {"pearson_r": -0.668, "pearson_p": 0.0, "spearman_r": -0.668, "spearman_p": 0.0, "abs_pearson_r": 0.668},
+                "pm25_vs_一次电力及其他能源占能源总量的比重 (%)": {"pearson_r": -0.654, "pearson_p": 0.0, "spearman_r": -0.654, "spearman_p": 0.0, "abs_pearson_r": 0.654},
+                "pm25_vs_煤炭占能源消费总量的比重 (%)": {"pearson_r": 0.653, "pearson_p": 0.0, "spearman_r": 0.653, "spearman_p": 0.0, "abs_pearson_r": 0.653},
+                "avg_u10_vs_avg_v10": {"pearson_r": -0.652, "pearson_p": 0.0, "spearman_r": -0.652, "spearman_p": 0.0, "abs_pearson_r": 0.652},
+                "石油占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)": {"pearson_r": 0.637, "pearson_p": 0.0, "spearman_r": 0.637, "spearman_p": 0.0, "abs_pearson_r": 0.637}
+            },
+            "city_ranking": {
+                "衡水": {"pm25_mean": 0.708, "pm25_std": 1.085, "pm25_trend": -2.543},
+                "邢台": {"pm25_mean": 0.618, "pm25_std": 0.859, "pm25_trend": -1.786},
+                "石家庄": {"pm25_mean": 0.521, "pm25_std": 0.783, "pm25_trend": -1.528},
+                "邯郸": {"pm25_mean": 0.504, "pm25_std": 0.734, "pm25_trend": -1.443},
+                "保定": {"pm25_mean": 0.416, "pm25_std": 0.952, "pm25_trend": -1.388},
+                "沧州": {"pm25_mean": 0.341, "pm25_std": 0.919, "pm25_trend": -2.208},
+                "廊坊": {"pm25_mean": 0.270, "pm25_std": 0.952, "pm25_trend": -2.248},
+                "天津": {"pm25_mean": 0.154, "pm25_std": 0.793, "pm25_trend": -1.953},
+                "唐山": {"pm25_mean": 0.064, "pm25_std": 0.712, "pm25_trend": -1.490},
+                "北京": {"pm25_mean": -0.370, "pm25_std": 0.724, "pm25_trend": -1.241},
+                "秦皇岛": {"pm25_mean": -0.777, "pm25_std": 0.383, "pm25_trend": -0.885},
+                "张家口": {"pm25_mean": -1.158, "pm25_std": 0.560, "pm25_trend": -1.323},
+                "承德": {"pm25_mean": -1.289, "pm25_std": 0.273, "pm25_trend": -0.497}
+            },
+            "yearly_trend": {
+                "2010": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
+                "2011": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
+                "2012": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
+                "2013": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
+                "2014": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
+                "2015": {"pm25_mean": 0.914, "pm25_std": 1.124, "observation_count": 13},
+                "2016": {"pm25_mean": 0.580, "pm25_std": 0.976, "observation_count": 13},
+                "2017": {"pm25_mean": 0.295, "pm25_std": 0.883, "observation_count": 13},
+                "2018": {"pm25_mean": -0.157, "pm25_std": 0.666, "observation_count": 13},
+                "2019": {"pm25_mean": -0.362, "pm25_std": 0.639, "observation_count": 13},
+                "2020": {"pm25_mean": -0.708, "pm25_std": 0.538, "observation_count": 13},
+                "2021": {"pm25_mean": -0.841, "pm25_std": 0.436, "observation_count": 13},
+                "2022": {"pm25_mean": -0.961, "pm25_std": 0.470, "observation_count": 13},
+                "2023": {"pm25_mean": -0.815, "pm25_std": 0.418, "observation_count": 13},
+                "2024": {"pm25_mean": -0.974, "pm25_std": 0.406, "observation_count": 13}
+            },
+            "regional_comparison": {
+                "north": {"pm25_mean": -0.544, "pm25_std": 0.857, "city_count": 6},
+                "south": {"pm25_mean": 0.466, "pm25_std": 0.873, "city_count": 7},
+                "difference": -1.009
+            },
+            "advanced_metrics": {
+                "high_correlation_pairs": [
+                    "煤炭占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)",
+                    "煤炭占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)",
+                    "天然气占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)",
+                    "煤炭占能源消费总量的比重 (%)_vs_石油占能源消费总量的比重 (%)",
+                    "石油占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)",
+                    "pm25_vs_天然气占能源消费总量的比重 (%)",
+                    "pm25_vs_一次电力及其他能源占能源总量的比重 (%)",
+                    "pm25_vs_煤炭占能源消费总量的比重 (%)",
+                    "avg_u10_vs_avg_v10",
+                    "石油占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)"
+                ],
+                "most_polluted_city": "衡水",
+                "least_polluted_city": "承德",
+                "north_south_difference": -1.009,
+                "overall_pm25_trend": -1.58
             },
             "stationarity_test": {
                 "llc_test": {
@@ -385,11 +595,208 @@
             }
         };
 
+        function getCorrelationClass(r) {
+            const absR = Math.abs(r);
+            if (absR >= 0.7) return 'correlation-high';
+            if (absR >= 0.3) return 'correlation-medium';
+            return 'correlation-low';
+        }
+
+        function getCorrelationStrength(r) {
+            const absR = Math.abs(r);
+            if (absR >= 0.7) return '强相关';
+            if (absR >= 0.3) return '中等相关';
+            return '弱相关';
+        }
+
+        function buildCorrelationTable() {
+            const tbody = document.getElementById('correlation-table');
+            const sortedCorr = Object.entries(processingResults.correlation_analysis)
+                .sort((a, b) => b[1].abs_pearson_r - a[1].abs_pearson_r);
+
+            sortedCorr.forEach(([key, value]) => {
+                const [var1, var2] = key.split('_vs_');
+                const corrClass = getCorrelationClass(value.pearson_r);
+                tbody.innerHTML += `<tr class="${corrClass}">
+                    <td>${var1} vs ${var2}</td>
+                    <td>${value.pearson_r.toFixed(3)}</td>
+                    <td>${value.pearson_p < 0.001 ? '<0.001' : value.pearson_p.toFixed(4)}</td>
+                    <td>${value.spearman_r.toFixed(3)}</td>
+                    <td>${getCorrelationStrength(value.pearson_r)}</td>
+                </tr>`;
+            });
+        }
+
+        function buildPM25CorrelationChart() {
+            const pm25Corr = {};
+            Object.entries(processingResults.correlation_analysis).forEach(([key, value]) => {
+                if (key.startsWith('pm25_vs_')) {
+                    const otherVar = key.replace('pm25_vs_', '');
+                    pm25Corr[otherVar] = value.pearson_r;
+                }
+            });
+
+            const labels = Object.keys(pm25Corr);
+            const data = Object.values(pm25Corr);
+
+            new Chart(document.getElementById('pm25CorrelationChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '与PM2.5的Pearson相关系数',
+                        data: data,
+                        backgroundColor: data.map(v => v > 0 ? 'rgba(255,107,107,0.7)' : 'rgba(0,217,255,0.7)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    }
+                }
+            });
+        }
+
+        function buildCityRankingTable() {
+            const tbody = document.getElementById('city-ranking-table');
+            const cities = Object.entries(processingResults.city_ranking);
+
+            cities.forEach(([city, stats], index) => {
+                const rank = index + 1;
+                let rankClass = 'rank-low';
+                if (rank <= 3) rankClass = `rank-${rank}`;
+                else if (rank <= 7) rankClass = 'rank-3';
+
+                let pollutionLevel = '轻度';
+                if (rank <= 3) pollutionLevel = '重度';
+                else if (rank <= 7) pollutionLevel = '中度';
+
+                tbody.innerHTML += `<tr>
+                    <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                    <td>${city}</td>
+                    <td>${stats.pm25_mean.toFixed(3)}</td>
+                    <td>${stats.pm25_std.toFixed(3)}</td>
+                    <td class="${stats.pm25_trend < 0 ? 'negative' : 'positive'}">${stats.pm25_trend.toFixed(3)}</td>
+                    <td>${pollutionLevel}</td>
+                </tr>`;
+            });
+        }
+
+        function buildCityRankingChart() {
+            const cities = Object.entries(processingResults.city_ranking);
+            const labels = cities.map(([city]) => city);
+            const means = cities.map(([, stats]) => stats.pm25_mean);
+
+            new Chart(document.getElementById('cityRankingChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'PM2.5均值',
+                        data: means,
+                        backgroundColor: means.map(v => v > 0 ? 'rgba(255,107,107,0.7)' : 'rgba(0,255,136,0.7)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        function buildYearlyTrendChart() {
+            const years = Object.keys(processingResults.yearly_trend).map(Number).sort();
+            const labels = years.map(y => y.toString());
+            const means = years.map(y => processingResults.yearly_trend[y].pm25_mean);
+            const stds = years.map(y => processingResults.yearly_trend[y].pm25_std);
+
+            new Chart(document.getElementById('yearlyTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'PM2.5均值',
+                            data: means,
+                            borderColor: 'rgba(0,217,255,1)',
+                            backgroundColor: 'rgba(0,217,255,0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'PM2.5标准差',
+                            data: stds,
+                            borderColor: 'rgba(255,107,107,1)',
+                            backgroundColor: 'rgba(255,107,107,0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.9)' } } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    }
+                }
+            });
+        }
+
+        function buildRegionalCompareChart() {
+            const regional = processingResults.regional_comparison;
+            const northCities = ['北京', '唐山', '廊坊', '张家口', '承德', '秦皇岛'];
+            const southCities = ['天津', '保定', '沧州', '石家庄', '衡水', '邢台', '邯郸'];
+
+            const northMeans = northCities.map(c => processingResults.city_ranking[c]?.pm25_mean || 0);
+            const southMeans = southCities.map(c => processingResults.city_ranking[c]?.pm25_mean || 0);
+
+            new Chart(document.getElementById('regionalCompareChart'), {
+                type: 'bar',
+                data: {
+                    labels: [...northCities, ...southCities],
+                    datasets: [
+                        {
+                            label: 'PM2.5均值',
+                            data: [...northMeans, ...southMeans],
+                            backgroundColor: [...northMeans.map(v => 'rgba(0,217,255,0.7)'), ...southMeans.map(v => 'rgba(255,107,107,0.7)')],
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
         function buildStationarityTable() {
             const tbody = document.getElementById('stationarity-table');
             const llcTest = processingResults.stationarity_test.llc_test;
             const ipsTest = processingResults.stationarity_test.ips_test;
-            
+
             for (const [varName, result] of Object.entries(llcTest)) {
                 const ipsResult = ipsTest[varName] || {};
                 const llcClass = result.stationary ? 'negative' : 'positive';
@@ -409,10 +816,10 @@
         function buildVIFTable() {
             const tbody = document.getElementById('vif-table');
             const vifResults = processingResults.multicollinearity_test.vif_results;
-            
+
             for (const [varName, result] of Object.entries(vifResults)) {
                 const vifClass = result.high_multicollinearity ? 'vif-high' : 'vif-ok';
-                const vifDisplay = result.vif === Infinity ? '∞' : result.vif.toFixed(2);
+                const vifDisplay = result.vif > 1000 ? '>1000' : result.vif.toFixed(2);
                 const status = result.high_multicollinearity ? '严重共线性' : '正常';
                 tbody.innerHTML += `<tr class="${vifClass}">
                     <td>${varName}</td>
@@ -425,7 +832,7 @@
         function buildStatsTable() {
             const tbody = document.getElementById('stats-table');
             const stats = processingResults.descriptive_statistics;
-            
+
             for (const [varName, result] of Object.entries(stats)) {
                 tbody.innerHTML += `<tr>
                     <td>${varName}</td>
@@ -437,6 +844,8 @@
                     <td>${result.median.toFixed(2)}</td>
                     <td>${result.q75.toFixed(2)}</td>
                     <td>${result.max.toFixed(2)}</td>
+                    <td>${result.skewness.toFixed(3)}</td>
+                    <td>${result.kurtosis.toFixed(3)}</td>
                 </tr>`;
             }
         }
@@ -512,18 +921,18 @@
                         borderWidth: 1
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { 
-                        y: { 
-                            grid: { color: 'rgba(255,255,255,0.1)' }, 
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
                             ticks: { color: 'rgba(255,255,255,0.7)' },
                             title: { display: true, text: 'VIF值 (红色: >10 严重共线性)', color: 'rgba(255,107,107,0.9)' }
-                        }, 
-                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } } 
-                    } 
+                        },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+                    }
                 }
             });
 
@@ -544,10 +953,26 @@
             });
         }
 
+        buildCorrelationTable();
+        buildPM25CorrelationChart();
+        buildCityRankingTable();
+        buildCityRankingChart();
+        buildYearlyTrendChart();
+        buildRegionalCompareChart();
         buildStationarityTable();
         buildVIFTable();
         buildStatsTable();
         initCharts();
+
+        document.getElementById('most-polluted-city').textContent = processingResults.advanced_metrics.most_polluted_city;
+        document.getElementById('least-polluted-city').textContent = processingResults.advanced_metrics.least_polluted_city;
+        document.getElementById('north-pm25').textContent = processingResults.regional_comparison.north.pm25_mean.toFixed(2);
+        document.getElementById('south-pm25').textContent = processingResults.regional_comparison.south.pm25_mean.toFixed(2);
+        document.getElementById('region-diff').textContent = processingResults.regional_comparison.difference.toFixed(2);
+
+        const bestImprovement = Object.entries(processingResults.city_ranking)
+            .sort((a, b) => a[1].pm25_trend - b[1].pm25_trend)[0];
+        document.getElementById('best-improvement').textContent = bestImprovement[0];
     </script>
 </body>
 </html>
