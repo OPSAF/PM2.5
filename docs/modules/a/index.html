@@ -49,7 +49,7 @@
 <body>
     <div class="header">
         <h1>PM2.5 面板数据处理模块</h1>
-        <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">2010-2024年京津冀13市平衡面板数据处理与检验</p>
+        <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">2014-2024年京津冀13市平衡面板数据处理与检验</p>
     </div>
 
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -72,7 +72,7 @@
                     <h3 class="card-title-custom">数据基本信息</h3>
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-value">2010-2024</div>
+                            <div class="stat-value">2014-2024</div>
                             <div class="stat-label">时间维度</div>
                         </div>
                         <div class="stat-card purple">
@@ -80,7 +80,7 @@
                             <div class="stat-label">城市数量</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-value">195</div>
+                            <div class="stat-value">143</div>
                             <div class="stat-label">观测值总数</div>
                         </div>
                         <div class="stat-card purple">
@@ -149,33 +149,27 @@
         <div class="tab-pane fade" id="missing">
             <div class="container-fluid">
                 <div class="glass-card">
-                    <h3 class="card-title-custom">缺失值处理方法</h3>
+                    <h3 class="card-title-custom">缺失值说明</h3>
                     <div class="method-box">
-                        <div class="method-title">处理策略</div>
+                        <div class="method-title">数据说明</div>
                         <p style="color: rgba(255,255,255,0.8); line-height: 1.8;">
-                            1. <strong style="color: #00d9ff;">少量缺失值（&lt;3年连续）</strong>：使用线性插值法（linear interpolation）填充<br>
-                            2. <strong style="color: #ff6b6b;">连续3年及以上缺失</strong>：直接剔除该指标<br>
-                            3. <strong style="color: #00ff88;">边界年份缺失</strong>：同时向前向后插值（limit_direction='both'）
+                            本数据集仅使用2014-2024年数据，该时间段内各变量均无缺失值，无需进行缺失值处理。
                         </p>
                     </div>
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-value">52</div>
-                            <div class="stat-label">2010-2013年缺失数</div>
+                            <div class="stat-value">143</div>
+                            <div class="stat-label">有效观测数</div>
                         </div>
                         <div class="stat-card purple">
                             <div class="stat-value">0</div>
-                            <div class="stat-label">插值后缺失数</div>
+                            <div class="stat-label">缺失值数量</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">剔除变量数</div>
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">数据完整率</div>
                         </div>
                     </div>
-                </div>
-                <div class="glass-card">
-                    <h3 class="card-title-custom">处理前后对比</h3>
-                    <div class="chart-container"><canvas id="missingCompareChart"></canvas></div>
                 </div>
             </div>
         </div>
@@ -466,10 +460,10 @@
     <script>
         const processingResults = {
             "data_info": {
-                "time_dimension": "2010-2024",
+                "time_dimension": "2014-2024",
                 "spatial_dimension": "京津冀13个地级市",
                 "cities": ["北京", "天津", "保定", "唐山", "廊坊", "张家口", "承德", "沧州", "石家庄", "秦皇岛", "衡水", "邢台", "邯郸"],
-                "total_observations": 195,
+                "total_observations": 143,
                 "variables": ["year", "city", "Unnamed: 0", "env_attention", "total_water", "avg_u10", "avg_v10", "tobeijing", "totianjin", "toshijiazhuang", "totangshan", "toqinhuangdao", "tohandan", "toxingtai", "tobaoding", "tozhangjiakou", "tochengde", "tocangzhou", "tolangfang", "tohengshui", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "pm25", "第二产业占比", "供气总量"],
                 "dependent_variable": "pm25",
                 "independent_variables": ["env_attention", "avg_u10", "avg_v10", "煤炭占能源消费总量的比重 (%)", "石油占能源消费总量的比重 (%)", "天然气占能源消费总量的比重 (%)", "一次电力及其他能源占能源总量的比重 (%)", "第二产业占比", "供气总量"]
@@ -499,59 +493,55 @@
                 "石油占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)": {"pearson_r": 0.637, "pearson_p": 0.0, "spearman_r": 0.637, "spearman_p": 0.0, "abs_pearson_r": 0.637}
             },
             "city_ranking": {
-                "衡水": {"pm25_mean": 0.708, "pm25_std": 1.085, "pm25_trend": -2.543},
-                "邢台": {"pm25_mean": 0.618, "pm25_std": 0.859, "pm25_trend": -1.786},
-                "石家庄": {"pm25_mean": 0.521, "pm25_std": 0.783, "pm25_trend": -1.528},
-                "邯郸": {"pm25_mean": 0.504, "pm25_std": 0.734, "pm25_trend": -1.443},
-                "保定": {"pm25_mean": 0.416, "pm25_std": 0.952, "pm25_trend": -1.388},
-                "沧州": {"pm25_mean": 0.341, "pm25_std": 0.919, "pm25_trend": -2.208},
-                "廊坊": {"pm25_mean": 0.270, "pm25_std": 0.952, "pm25_trend": -2.248},
-                "天津": {"pm25_mean": 0.154, "pm25_std": 0.793, "pm25_trend": -1.953},
-                "唐山": {"pm25_mean": 0.064, "pm25_std": 0.712, "pm25_trend": -1.490},
-                "北京": {"pm25_mean": -0.370, "pm25_std": 0.724, "pm25_trend": -1.241},
-                "秦皇岛": {"pm25_mean": -0.777, "pm25_std": 0.383, "pm25_trend": -0.885},
-                "张家口": {"pm25_mean": -1.158, "pm25_std": 0.560, "pm25_trend": -1.323},
-                "承德": {"pm25_mean": -1.289, "pm25_std": 0.273, "pm25_trend": -0.497}
+                "邢台": {"pm25_mean": 0.654, "pm25_std": 0.959, "pm25_trend": -1.850},
+                "石家庄": {"pm25_mean": 0.600, "pm25_std": 0.896, "pm25_trend": -1.583},
+                "邯郸": {"pm25_mean": 0.594, "pm25_std": 0.842, "pm25_trend": -1.495},
+                "衡水": {"pm25_mean": 0.565, "pm25_std": 1.058, "pm25_trend": -2.634},
+                "保定": {"pm25_mean": 0.532, "pm25_std": 1.137, "pm25_trend": -1.437},
+                "沧州": {"pm25_mean": 0.168, "pm25_std": 0.752, "pm25_trend": -2.287},
+                "唐山": {"pm25_mean": 0.126, "pm25_std": 0.803, "pm25_trend": -1.543},
+                "廊坊": {"pm25_mean": 0.111, "pm25_std": 0.844, "pm25_trend": -2.328},
+                "天津": {"pm25_mean": 0.055, "pm25_std": 0.700, "pm25_trend": -2.023},
+                "北京": {"pm25_mean": -0.284, "pm25_std": 0.847, "pm25_trend": -1.285},
+                "秦皇岛": {"pm25_mean": -0.724, "pm25_std": 0.363, "pm25_trend": -0.916},
+                "承德": {"pm25_mean": -1.160, "pm25_std": 0.316, "pm25_trend": -0.514},
+                "张家口": {"pm25_mean": -1.237, "pm25_std": 0.424, "pm25_trend": -1.370}
             },
             "yearly_trend": {
-                "2010": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
-                "2011": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
-                "2012": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
-                "2013": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
-                "2014": {"pm25_mean": 0.606, "pm25_std": 0.861, "observation_count": 13},
-                "2015": {"pm25_mean": 0.914, "pm25_std": 1.124, "observation_count": 13},
-                "2016": {"pm25_mean": 0.580, "pm25_std": 0.976, "observation_count": 13},
-                "2017": {"pm25_mean": 0.295, "pm25_std": 0.883, "observation_count": 13},
-                "2018": {"pm25_mean": -0.157, "pm25_std": 0.666, "observation_count": 13},
-                "2019": {"pm25_mean": -0.362, "pm25_std": 0.639, "observation_count": 13},
-                "2020": {"pm25_mean": -0.708, "pm25_std": 0.538, "observation_count": 13},
-                "2021": {"pm25_mean": -0.841, "pm25_std": 0.436, "observation_count": 13},
-                "2022": {"pm25_mean": -0.961, "pm25_std": 0.470, "observation_count": 13},
-                "2023": {"pm25_mean": -0.815, "pm25_std": 0.418, "observation_count": 13},
-                "2024": {"pm25_mean": -0.974, "pm25_std": 0.406, "observation_count": 13}
+                "2014": {"pm25_mean": 0.855, "pm25_std": 0.892, "observation_count": 13},
+                "2015": {"pm25_mean": 1.175, "pm25_std": 1.163, "observation_count": 13},
+                "2016": {"pm25_mean": 0.829, "pm25_std": 1.011, "observation_count": 13},
+                "2017": {"pm25_mean": 0.534, "pm25_std": 0.914, "observation_count": 13},
+                "2018": {"pm25_mean": 0.065, "pm25_std": 0.690, "observation_count": 13},
+                "2019": {"pm25_mean": -0.147, "pm25_std": 0.661, "observation_count": 13},
+                "2020": {"pm25_mean": -0.505, "pm25_std": 0.557, "observation_count": 13},
+                "2021": {"pm25_mean": -0.642, "pm25_std": 0.451, "observation_count": 13},
+                "2022": {"pm25_mean": -0.767, "pm25_std": 0.487, "observation_count": 13},
+                "2023": {"pm25_mean": -0.616, "pm25_std": 0.433, "observation_count": 13},
+                "2024": {"pm25_mean": -0.780, "pm25_std": 0.420, "observation_count": 13}
             },
             "regional_comparison": {
-                "north": {"pm25_mean": -0.544, "pm25_std": 0.857, "city_count": 6},
-                "south": {"pm25_mean": 0.466, "pm25_std": 0.873, "city_count": 7},
-                "difference": -1.009
+                "north": {"pm25_mean": -0.528, "pm25_std": 0.833, "city_count": 6},
+                "south": {"pm25_mean": 0.453, "pm25_std": 0.909, "city_count": 7},
+                "difference": -0.981
             },
             "advanced_metrics": {
                 "high_correlation_pairs": [
-                    "煤炭占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)",
                     "煤炭占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)",
+                    "煤炭占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)",
                     "天然气占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)",
-                    "煤炭占能源消费总量的比重 (%)_vs_石油占能源消费总量的比重 (%)",
-                    "石油占能源消费总量的比重 (%)_vs_天然气占能源消费总量的比重 (%)",
                     "pm25_vs_天然气占能源消费总量的比重 (%)",
-                    "pm25_vs_一次电力及其他能源占能源总量的比重 (%)",
                     "pm25_vs_煤炭占能源消费总量的比重 (%)",
                     "avg_u10_vs_avg_v10",
-                    "石油占能源消费总量的比重 (%)_vs_一次电力及其他能源占能源总量的比重 (%)"
+                    "pm25_vs_一次电力及其他能源占能源总量的比重 (%)",
+                    "第二产业占比_vs_供气总量",
+                    "pm25_vs_第二产业占比",
+                    "pm25_vs_avg_v10"
                 ],
-                "most_polluted_city": "衡水",
-                "least_polluted_city": "承德",
-                "north_south_difference": -1.009,
-                "overall_pm25_trend": -1.58
+                "most_polluted_city": "邢台",
+                "least_polluted_city": "张家口",
+                "north_south_difference": -0.981,
+                "overall_pm25_trend": -1.635
             },
             "stationarity_test": {
                 "llc_test": {

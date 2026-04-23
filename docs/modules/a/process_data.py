@@ -22,7 +22,7 @@ print(f"解释变量数量: {len(independent_vars)}")
 print(f"解释变量: {independent_vars}")
 
 jjj_cities = ['北京', '天津', '保定', '唐山', '廊坊', '张家口', '承德', '沧州', '石家庄', '秦皇岛', '衡水', '邢台', '邯郸']
-target_years = list(range(2010, 2025))
+target_years = list(range(2014, 2025))
 
 jjj_df = df[df['city'].isin(jjj_cities)].copy()
 print(f"\n筛选后数据形状: {jjj_df.shape}")
@@ -39,54 +39,6 @@ for var in all_vars:
     if var in merged_df.columns:
         missing_count = merged_df[var].isnull().sum()
         print(f"  {var}: {missing_count}")
-
-def linear_interpolate_group(group, cols):
-    group = group.sort_values('year')
-    for col in cols:
-        if col in group.columns:
-            missing_mask = group[col].isnull()
-            if missing_mask.any():
-                group[col] = group[col].interpolate(method='linear', limit_direction='both')
-    return group
-
-vars_to_interpolate = [var for var in all_vars if var in merged_df.columns]
-merged_df = merged_df.groupby('city', group_keys=False).apply(
-    lambda x: linear_interpolate_group(x, vars_to_interpolate)
-)
-
-print(f"\n插值后缺失值统计:")
-for var in all_vars:
-    if var in merged_df.columns:
-        missing_count = merged_df[var].isnull().sum()
-        print(f"  {var}: {missing_count}")
-
-def count_consecutive_missing(group, col):
-    missing = group[col].isnull().astype(int)
-    max_consecutive = 0
-    current_consecutive = 0
-    for m in missing:
-        if m == 1:
-            current_consecutive += 1
-            max_consecutive = max(max_consecutive, current_consecutive)
-        else:
-            current_consecutive = 0
-    return max_consecutive
-
-vars_to_drop = []
-for var in all_vars:
-    if var in merged_df.columns:
-        consecutive = merged_df.groupby('city').apply(lambda x: count_consecutive_missing(x, var))
-        vars_with_3plus_missing = consecutive[consecutive >= 3].index.tolist()
-        if vars_with_3plus_missing:
-            print(f"\n警告: {var} 在以下城市有连续3年+缺失: {vars_with_3plus_missing}")
-            vars_to_drop.append(var)
-
-if vars_to_drop:
-    print(f"\n剔除变量(连续3年+缺失): {vars_to_drop}")
-    merged_df = merged_df.drop(columns=vars_to_drop)
-    independent_vars = [v for v in independent_vars if v not in vars_to_drop]
-else:
-    print("\n无连续3年+缺失的变量")
 
 merged_df = merged_df.sort_values(['city', 'year']).reset_index(drop=True)
 
@@ -298,7 +250,7 @@ variable_description = {
 
 result_summary = {
     'data_info': {
-        'time_dimension': '2010-2024',
+        'time_dimension': '2014-2024',
         'spatial_dimension': '京津冀13个地级市',
         'cities': jjj_cities,
         'total_observations': int(len(merged_df)),
@@ -308,8 +260,8 @@ result_summary = {
     },
     'variable_description': {k: v for k, v in variable_description.items() if k in merged_df.columns},
     'missing_value_treatment': {
-        'method': '线性插值填充少量缺失值',
-        'removed_variables': vars_to_drop if vars_to_drop else '无',
+        'method': '无（仅使用2014-2024数据，该时间段无缺失）',
+        'removed_variables': '无',
         'removed_for_multicollinearity': removed_for_vif if removed_for_vif else '无'
     },
     'outlier_treatment': {
@@ -341,7 +293,7 @@ result_summary = {
         'most_polluted_city': list(city_ranking_sorted.keys())[0] if city_ranking_sorted else None,
         'least_polluted_city': list(city_ranking_sorted.keys())[-1] if city_ranking_sorted else None,
         'north_south_difference': regional_comparison['difference'],
-        'overall_pm25_trend': float(merged_df[merged_df['year'] == 2024][dependent_var].mean() - merged_df[merged_df['year'] == 2010][dependent_var].mean()) if 2024 in target_years and 2010 in target_years else 0
+        'overall_pm25_trend': float(merged_df[merged_df['year'] == 2024][dependent_var].mean() - merged_df[merged_df['year'] == 2014][dependent_var].mean()) if 2024 in target_years and 2014 in target_years else 0
     }
 }
 
